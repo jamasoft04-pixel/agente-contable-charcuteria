@@ -280,6 +280,19 @@ header{background:var(--dark);border-bottom:3px solid var(--gold);box-shadow:0 4
   .two-col,.three-col,.m303-grid{grid-template-columns:1fr;}
   .wrap{padding:16px;}
 }
+@media(max-width:640px){
+  .hdr{padding:10px 14px;gap:10px;}
+  .hdr-title h1{font-size:1rem;}
+  .hdr-title span{font-size:.5rem;letter-spacing:.1em;}
+  .hdr-stat{display:none;}
+  .hdr-badge{display:none;}
+  .hdr-right{gap:6px;}
+  .nav-inner{padding:0 12px;}
+  .nav-btn{padding:10px 12px;font-size:.55rem;letter-spacing:.08em;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+  .sub-tabs{overflow-x:auto;}
+  .sub-btn{padding:8px 10px;font-size:.55rem;}
+}
 </style>
 </head>
 <body>
@@ -1386,36 +1399,42 @@ function exportCSV(){
 }
 
 // ══════════════════════════════════════════
-// CONFIGURACIÓN ENCABEZADO
+// CONFIGURACIÓN ENCABEZADO — Supabase
 // ══════════════════════════════════════════
-const CFG_KEY = 'agente_contable_config';
 
-function cargarConfigGuardada(){
+async function cargarConfigGuardada(){
   try {
-    const raw = localStorage.getItem(CFG_KEY);
-    if(!raw) return;
-    const c = JSON.parse(raw);
-    if(c.emoji)   document.getElementById('hdr-emoji').textContent = c.emoji;
-    if(c.titulo)  document.getElementById('hdr-titulo').textContent = c.titulo;
-    if(c.negocio) document.getElementById('hdr-negocio').textContent = c.negocio;
-    if(c.titulo)  document.title = c.titulo + (c.negocio ? ' · ' + c.negocio : '');
-    // Actualizar también los campos receptor por defecto
-    if(c.fiscal)  document.getElementById('rec-nombre').value = c.fiscal;
-    if(c.cif)     document.getElementById('rec-cif').value = c.cif;
-  } catch(e){}
+    const data = await sbSelect('configuracion?id=eq.global&limit=1');
+    if(data && data.length) aplicarConfig(data[0]);
+  } catch(e){
+    // silencioso — usa valores por defecto del HTML
+  }
 }
 
-function abrirConfig(){
-  // Rellenar modal con valores actuales
-  const raw = localStorage.getItem(CFG_KEY);
-  const c = raw ? JSON.parse(raw) : {};
-  document.getElementById('cfg-emoji-custom').value = c.emoji || '';
-  document.getElementById('cfg-titulo').value  = c.titulo  || document.getElementById('hdr-titulo').textContent;
-  document.getElementById('cfg-negocio').value = c.negocio || document.getElementById('hdr-negocio').textContent;
-  document.getElementById('cfg-fiscal').value  = c.fiscal  || document.getElementById('rec-nombre').value;
-  document.getElementById('cfg-cif').value     = c.cif     || document.getElementById('rec-cif').value;
+function aplicarConfig(c){
+  if(!c) return;
+  if(c.emoji)   document.getElementById('hdr-emoji').textContent  = c.emoji;
+  if(c.titulo)  document.getElementById('hdr-titulo').textContent = c.titulo;
+  if(c.negocio) document.getElementById('hdr-negocio').textContent= c.negocio;
+  if(c.titulo)  document.title = c.titulo + (c.negocio ? ' · ' + c.negocio : '');
+  if(c.fiscal)  document.getElementById('rec-nombre').value = c.fiscal;
+  if(c.cif)     document.getElementById('rec-cif').value    = c.cif;
+}
+
+async function abrirConfig(){
+  // Cargar valores actuales desde Supabase
+  let c = {};
+  try {
+    const data = await sbSelect('configuracion?id=eq.global&limit=1');
+    if(data && data.length) c = data[0];
+  } catch(e){}
+
+  document.getElementById('cfg-emoji-custom').value = c.emoji   || document.getElementById('hdr-emoji').textContent;
+  document.getElementById('cfg-titulo').value        = c.titulo  || document.getElementById('hdr-titulo').textContent;
+  document.getElementById('cfg-negocio').value       = c.negocio || document.getElementById('hdr-negocio').textContent;
+  document.getElementById('cfg-fiscal').value        = c.fiscal  || document.getElementById('rec-nombre').value;
+  document.getElementById('cfg-cif').value           = c.cif     || document.getElementById('rec-cif').value;
   actualizarPreview();
-  // Marcar emoji seleccionado
   document.querySelectorAll('.ep').forEach(b => b.classList.toggle('sel', b.textContent === (c.emoji||'🥩')));
   document.getElementById('modal-cfg').style.display = 'flex';
 }
@@ -1439,36 +1458,43 @@ function actualizarPreview(){
   document.getElementById('prev-negocio').textContent = negocio;
 }
 
-// Preview en tiempo real al escribir
 ['cfg-titulo','cfg-negocio','cfg-emoji-custom'].forEach(id => {
   document.getElementById(id).addEventListener('input', actualizarPreview);
 });
 
-function guardarConfig(){
+async function guardarConfig(){
   const emoji   = document.getElementById('cfg-emoji-custom').value.trim() || '🥩';
   const titulo  = document.getElementById('cfg-titulo').value.trim()  || 'Agente Contable';
   const negocio = document.getElementById('cfg-negocio').value.trim();
   const fiscal  = document.getElementById('cfg-fiscal').value.trim();
   const cif     = document.getElementById('cfg-cif').value.trim();
 
-  const cfg = { emoji, titulo, negocio, fiscal, cif };
-  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+  const btn = document.querySelector('#modal-cfg button[onclick="guardarConfig()"]');
+  if(btn){ btn.textContent = '⟳ Guardando...'; btn.disabled = true; }
 
-  // Aplicar al header en vivo
-  document.getElementById('hdr-emoji').textContent   = emoji;
-  document.getElementById('hdr-titulo').textContent  = titulo;
-  document.getElementById('hdr-negocio').textContent = negocio || titulo;
-  document.title = titulo + (negocio ? ' · ' + negocio : '');
+  try {
+    // UPSERT en Supabase — actualiza si existe, crea si no
+    const r = await fetch(`${SB_URL}/rest/v1/configuracion`, {
+      method: 'POST',
+      headers: {
+        ...sbHeaders,
+        'Prefer': 'resolution=merge-duplicates,return=representation'
+      },
+      body: JSON.stringify({ id:'global', emoji, titulo, negocio, fiscal, cif, updated_at: new Date().toISOString() })
+    });
+    if(!r.ok) throw new Error(await r.text());
 
-  // Actualizar campos receptor
-  if(fiscal) document.getElementById('rec-nombre').value = fiscal;
-  if(cif)    document.getElementById('rec-cif').value    = cif;
-
-  cerrarConfig();
-  showToast('Configuración guardada');
+    // Aplicar en vivo
+    aplicarConfig({ emoji, titulo, negocio, fiscal, cif });
+    cerrarConfig();
+    showToast('✓ Configuración guardada en todos los dispositivos');
+  } catch(e) {
+    showToast('Error al guardar: ' + e.message);
+  } finally {
+    if(btn){ btn.textContent = '✓ Guardar'; btn.disabled = false; }
+  }
 }
 
-// Cerrar modal al hacer clic fuera
 document.getElementById('modal-cfg').addEventListener('click', function(e){
   if(e.target === this) cerrarConfig();
 });
