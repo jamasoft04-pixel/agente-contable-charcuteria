@@ -395,6 +395,7 @@ header{background:var(--dark);border-bottom:3px solid var(--gold);box-shadow:0 4
   <div class="nav-inner">
     <button class="nav-btn active" onclick="showPage('agente',this)">📎 Agente OCR</button>
     <button class="nav-btn" onclick="showPage('informes',this)">📊 Informes</button>
+    <button class="nav-btn" onclick="showPage('conciliacion',this)">🔍 Conciliación</button>
   </div>
 </nav>
 
@@ -654,6 +655,103 @@ header{background:var(--dark);border-bottom:3px solid var(--gold);box-shadow:0 4
 
 </div><!-- /page-informes -->
 
+<!-- ══════════════════════════════════════ -->
+<!-- PÁGINA: CONCILIACIÓN                   -->
+<!-- ══════════════════════════════════════ -->
+<div class="page" id="page-conciliacion">
+
+  <!-- KPIs -->
+  <div class="kpi-grid" id="conc-kpis" style="margin-bottom:22px;"></div>
+
+  <!-- Alerta resumen -->
+  <div id="conc-alerta" style="display:none;padding:12px 16px;border-radius:3px;margin-bottom:18px;font-family:'JetBrains Mono',monospace;font-size:.7rem;line-height:1.6;border:1px solid rgba(139,26,26,.3);background:#FFF0F0;color:var(--red);"></div>
+
+  <!-- Controles -->
+  <div class="period-bar" style="margin-bottom:18px;">
+    <label>Año</label>
+    <select id="conc-anio">
+      <option value="2025">2025</option>
+      <option value="2024" selected>2024</option>
+      <option value="2023">2023</option>
+    </select>
+    <label>Trimestre</label>
+    <select id="conc-trim">
+      <option value="0">Año completo</option>
+      <option value="1">1T</option><option value="2">2T</option>
+      <option value="3">3T</option><option value="4">4T</option>
+    </select>
+    <label>Proveedor</label>
+    <select id="conc-prov"><option value="">Todos</option></select>
+    <button class="btn-gen" onclick="cargarConciliacion()">Analizar</button>
+    <button class="btn-exp pdf" onclick="exportConciliacionCSV()" style="margin-left:4px;padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;border-radius:3px;cursor:pointer;border:1px solid var(--red);color:var(--red);background:rgba(139,26,26,.06);transition:all .2s;">⬇ CSV</button>
+  </div>
+
+  <div class="two-col" style="margin-bottom:18px;">
+    <!-- Albaranes sin factura -->
+    <div class="panel">
+      <div class="panel-hdr" style="background:var(--red);">
+        <h3 style="color:var(--cream);">⚠ Albaranes sin factura</h3>
+        <span id="badge-sin-factura" style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:rgba(245,240,232,.7);background:rgba(0,0,0,.2);padding:2px 8px;border-radius:10px;">0</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="dtbl">
+          <thead><tr>
+            <th>Fecha</th><th>Nº Albarán</th><th>Proveedor</th>
+            <th class="r">Días</th><th>Estado</th>
+          </tr></thead>
+          <tbody id="tb-sin-factura">
+            <tr><td colspan="5" class="no-data" style="text-align:center;padding:24px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.65rem;">Pulsa Analizar para cargar</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Facturas sin albarán -->
+    <div class="panel">
+      <div class="panel-hdr" style="background:var(--warn);">
+        <h3 style="color:var(--cream);">📋 Facturas sin albarán previo</h3>
+        <span id="badge-sin-albaran" style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:rgba(245,240,232,.7);background:rgba(0,0,0,.2);padding:2px 8px;border-radius:10px;">0</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="dtbl">
+          <thead><tr>
+            <th>Fecha</th><th>Nº Factura</th><th>Proveedor</th>
+            <th class="r">Total</th><th>Estado</th>
+          </tr></thead>
+          <tbody id="tb-sin-albaran">
+            <tr><td colspan="5" class="no-data" style="text-align:center;padding:24px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.65rem;">Pulsa Analizar para cargar</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla conciliados -->
+  <div class="panel">
+    <div class="panel-hdr" style="background:var(--ok);">
+      <h3 style="color:var(--cream);">✅ Albaranes conciliados con factura</h3>
+      <span id="badge-conciliados" style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:rgba(245,240,232,.7);background:rgba(0,0,0,.2);padding:2px 8px;border-radius:10px;">0</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="dtbl">
+        <thead><tr>
+          <th>Proveedor</th><th>Nº Albarán</th><th>Fecha Alb.</th>
+          <th>Nº Factura</th><th>Fecha Fact.</th>
+          <th class="r">Total</th><th>Método</th>
+        </tr></thead>
+        <tbody id="tb-conciliados">
+          <tr><td colspan="7" class="no-data" style="text-align:center;padding:24px;color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:.65rem;">Pulsa Analizar para cargar</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="exp-bar">
+      <button class="btn-exp" onclick="exportConciliacionCSV()">⬇ Exportar CSV</button>
+      <button class="btn-exp pdf" onclick="window.print()">⬇ PDF</button>
+    </div>
+  </div>
+
+</div><!-- /page-conciliacion -->
+
 </div><!-- /wrap -->
 <div class="toast" id="toast"></div>
 
@@ -686,6 +784,7 @@ function showPage(id,btn){
   document.getElementById('page-'+id).classList.add('active');
   btn.classList.add('active');
   if(id==='informes') cargarInformes();
+  if(id==='conciliacion') cargarConciliacion();
 }
 
 function showSub(id,btn){
@@ -907,8 +1006,10 @@ REGLAS:
 5. Detecta Recargo de Equivalencia si aplica (0.5%, 1.4% o 5.2%).
 6. Si falta dato crítico: "REVISAR MANUALMENTE". Si albarán sin precios: tipo="Albarán".
 7. Categoría: Embutidos / Lácteos / Bebidas / Limpieza / Packaging / Carnicería / Varios / Otros.
+8. Si es una FACTURA que referencia un albarán previo, extrae el número de albarán en numero_albaran. Si no hay referencia pon null.
+9. Si es un ALBARÁN, el numero_factura es el número del albarán y numero_albaran es null.
 RESPONDE SOLO JSON sin markdown:
-{"documento":{"tipo":"Factura|Simplificada|Albarán","numero_factura":"","fecha":""},"emisor":{"nombre_fiscal":"","cif_nif":""},"receptor":{"nombre_fiscal":"${recNombre}","cif_nif":"${recCIF}"},"desglose_economico":{"base_4":0,"cuota_iva_4":0,"re_4":0,"base_10":0,"cuota_iva_10":0,"re_10":0,"base_21":0,"cuota_iva_21":0,"re_21":0,"base_imponible_total":0,"total_iva":0,"recargo_equivalencia_total":0,"total_factura":0},"categoria_gasto":"","observaciones":""}`;
+{"documento":{"tipo":"Factura|Simplificada|Albarán","numero_factura":"","fecha":"","numero_albaran":null},"emisor":{"nombre_fiscal":"","cif_nif":""},"receptor":{"nombre_fiscal":"${recNombre}","cif_nif":"${recCIF}"},"desglose_economico":{"base_4":0,"cuota_iva_4":0,"re_4":0,"base_10":0,"cuota_iva_10":0,"re_10":0,"base_21":0,"cuota_iva_21":0,"re_21":0,"base_imponible_total":0,"total_iva":0,"recargo_equivalencia_total":0,"total_factura":0},"categoria_gasto":"","observaciones":""}`;
 }
 
 function loadFile(f){
@@ -1013,6 +1114,7 @@ async function guardarEnSupabase(d, recNombreOverride, recCIFOverride){
   }
   const row={
     tipo:doc.tipo||null, numero_factura:doc.numero_factura||null,
+    numero_albaran:doc.numero_albaran||null,
     fecha:fechaISO,
     emisor_nombre:emisor.nombre_fiscal||null, emisor_cif:emisor.cif_nif||null,
     receptor_nombre:recNombre,
@@ -1448,6 +1550,217 @@ function hideLoading(){document.getElementById('loading-overlay').classList.remo
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent='✓ '+msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 
+// ══════════════════════════════════════════
+// CONCILIACIÓN ALBARANES vs FACTURAS
+// ══════════════════════════════════════════
+let conciliacionData = { albaran: [], factura: [], sinFactura: [], sinAlbaran: [], conciliados: [] };
+
+async function cargarConciliacion(){
+  const anio = document.getElementById('conc-anio').value;
+  const trim = parseInt(document.getElementById('conc-trim').value);
+  const prov = document.getElementById('conc-prov').value;
+  showLoading('Cargando documentos...');
+  try {
+    let q = `facturas?select=*&order=fecha.asc`;
+    if(trim === 0){
+      q += `&fecha=gte.${anio}-01-01&fecha=lte.${anio}-12-31`;
+    } else {
+      const m1=(trim-1)*3+1, m2=trim*3;
+      const d1=`${anio}-${String(m1).padStart(2,'0')}-01`;
+      const lastDay=new Date(anio,m2,0).getDate();
+      const d2=`${anio}-${String(m2).padStart(2,'0')}-${lastDay}`;
+      q += `&fecha=gte.${d1}&fecha=lte.${d2}`;
+    }
+    if(prov) q += `&emisor_nombre=eq.${encodeURIComponent(prov)}`;
+
+    const todos = await sbSelect(q);
+
+    // Separar albaranes y facturas/simplificadas
+    const albaranes = todos.filter(f => f.tipo === 'Albarán');
+    const facturas  = todos.filter(f => f.tipo === 'Factura' || f.tipo === 'Simplificada');
+
+    // Poblar selector de proveedor
+    const provs = [...new Set(todos.map(f=>f.emisor_nombre).filter(Boolean))].sort();
+    const sel = document.getElementById('conc-prov');
+    const curr = sel.value;
+    sel.innerHTML = '<option value="">Todos</option>' + provs.map(p=>`<option value="${p}" ${p===curr?'selected':''}>${p}</option>`).join('');
+
+    // Algoritmo de conciliación 3 métodos
+    const conciliados = [];
+    const albUsados   = new Set();
+    const factUsadas  = new Set();
+
+    // MÉTODO 1: número de albarán referenciado en la factura
+    facturas.forEach(fac => {
+      if(fac.numero_albaran){
+        const alb = albaranes.find(a =>
+          !albUsados.has(a.id) &&
+          a.numero_factura === fac.numero_albaran
+        );
+        if(alb){
+          conciliados.push({ alb, fac, metodo:'Nº albarán' });
+          albUsados.add(alb.id);
+          factUsadas.add(fac.id);
+        }
+      }
+    });
+
+    // MÉTODO 2: mismo proveedor + fecha cercana (≤30 días)
+    facturas.filter(f => !factUsadas.has(f.id)).forEach(fac => {
+      const facFecha = new Date(fac.fecha);
+      const alb = albaranes.find(a => {
+        if(albUsados.has(a.id)) return false;
+        if(a.emisor_cif && fac.emisor_cif && a.emisor_cif !== fac.emisor_cif) return false;
+        if(a.emisor_nombre !== fac.emisor_nombre) return false;
+        const albFecha = new Date(a.fecha);
+        const diff = Math.abs((facFecha - albFecha) / 86400000);
+        return diff <= 30;
+      });
+      if(alb){
+        conciliados.push({ alb, fac, metodo:'Proveedor + fecha' });
+        albUsados.add(alb.id);
+        factUsadas.add(fac.id);
+      }
+    });
+
+    // MÉTODO 3: mismo proveedor + importe similar (±5%)
+    facturas.filter(f => !factUsadas.has(f.id)).forEach(fac => {
+      const alb = albaranes.find(a => {
+        if(albUsados.has(a.id)) return false;
+        if(a.emisor_nombre !== fac.emisor_nombre) return false;
+        if(!a.base_imponible_total || !fac.base_imponible_total) return false;
+        const diff = Math.abs(a.base_imponible_total - fac.base_imponible_total) / fac.base_imponible_total;
+        return diff <= 0.05;
+      });
+      if(alb){
+        conciliados.push({ alb, fac, metodo:'Importe similar' });
+        albUsados.add(alb.id);
+        factUsadas.add(fac.id);
+      }
+    });
+
+    const sinFactura = albaranes.filter(a => !albUsados.has(a.id));
+    const sinAlbaran = facturas.filter(f => !factUsadas.has(f.id));
+
+    conciliacionData = { albaranes, facturas, sinFactura, sinAlbaran, conciliados };
+    renderConciliacion(sinFactura, sinAlbaran, conciliados, albaranes.length, facturas.length);
+
+    showToast(`Análisis completado · ${albaranes.length} albaranes · ${facturas.length} facturas`);
+  } catch(e) {
+    showToast('Error: ' + e.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+function renderConciliacion(sinFactura, sinAlbaran, conciliados, totalAlb, totalFac){
+  const hoy = new Date();
+  const byFecha = (a,b) => (a.fecha||'') > (b.fecha||'') ? 1 : -1;
+
+  sinFactura = [...sinFactura].sort(byFecha);
+  sinAlbaran = [...sinAlbaran].sort(byFecha);
+  conciliados = [...conciliados].sort((a,b) => (a.alb.fecha||'') > (b.alb.fecha||'') ? 1 : -1);
+
+  // KPIs
+  document.getElementById('conc-kpis').innerHTML = `
+    <div class="kpi r">
+      <div class="kpi-lbl">Albaranes sin factura</div>
+      <div class="kpi-val">${sinFactura.length}</div>
+      <div class="kpi-sub">de ${totalAlb} albaranes</div>
+    </div>
+    <div class="kpi" style="--c:var(--warn)">
+      <div class="kpi-lbl">Facturas sin albarán</div>
+      <div class="kpi-val">${sinAlbaran.length}</div>
+      <div class="kpi-sub">de ${totalFac} facturas</div>
+    </div>
+    <div class="kpi g">
+      <div class="kpi-lbl">Conciliados</div>
+      <div class="kpi-val">${conciliados.length}</div>
+      <div class="kpi-sub">pares albarán–factura</div>
+    </div>
+    <div class="kpi b">
+      <div class="kpi-lbl">% conciliación</div>
+      <div class="kpi-val">${totalAlb > 0 ? Math.round(conciliados.length/totalAlb*100) : 0}%</div>
+      <div class="kpi-sub">del total de albaranes</div>
+    </div>`;
+
+  // Alerta
+  const alertEl = document.getElementById('conc-alerta');
+  if(sinFactura.length > 0){
+    alertEl.style.display = 'block';
+    alertEl.innerHTML = `⚠ <strong>${sinFactura.length} albarán${sinFactura.length>1?'es':''} sin factura</strong> · Proveedores: ${[...new Set(sinFactura.map(a=>a.emisor_nombre).filter(Boolean))].join(', ')}`;
+  } else {
+    alertEl.style.display = 'none';
+  }
+
+  document.getElementById('badge-sin-factura').textContent = sinFactura.length;
+  document.getElementById('badge-sin-albaran').textContent = sinAlbaran.length;
+  document.getElementById('badge-conciliados').textContent = conciliados.length;
+
+  // Tabla albaranes sin factura
+  document.getElementById('tb-sin-factura').innerHTML = sinFactura.length
+    ? sinFactura.map(a => {
+        const dias = a.fecha ? Math.floor((hoy - new Date(a.fecha)) / 86400000) : '—';
+        const urgencia = typeof dias === 'number' && dias > 30
+          ? `<span style="background:rgba(139,26,26,.15);color:var(--red);padding:2px 7px;border-radius:10px;font-size:.58rem;">${dias}d · URGENTE</span>`
+          : `<span style="background:rgba(122,74,0,.1);color:var(--warn);padding:2px 7px;border-radius:10px;font-size:.58rem;">${dias}d</span>`;
+        return `<tr>
+          <td class="mono">${a.fecha||'—'}</td>
+          <td class="mono">${a.numero_factura||'—'}</td>
+          <td>${a.emisor_nombre||'—'}</td>
+          <td class="r">${urgencia}</td>
+          <td><span style="background:#FFF0F0;color:var(--red);padding:2px 7px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:.58rem;">Sin factura</span></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="5" style="text-align:center;padding:20px;font-family:\'JetBrains Mono\',monospace;font-size:.65rem;color:var(--ok);">✓ Todos los albaranes tienen factura</td></tr>';
+
+  // Tabla facturas sin albarán
+  document.getElementById('tb-sin-albaran').innerHTML = sinAlbaran.length
+    ? sinAlbaran.map(f => `<tr>
+        <td class="mono">${f.fecha||'—'}</td>
+        <td class="mono">${f.numero_factura||'—'}</td>
+        <td>${f.emisor_nombre||'—'}</td>
+        <td class="r">${fmt(f.total_factura)}</td>
+        <td><span style="background:rgba(122,74,0,.1);color:var(--warn);padding:2px 7px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:.58rem;">Sin albarán</span></td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" style="text-align:center;padding:20px;font-family:\'JetBrains Mono\',monospace;font-size:.65rem;color:var(--ok);">✓ Todas las facturas tienen albarán previo</td></tr>';
+
+  // Tabla conciliados
+  const metodoBadge = m => {
+    const col = m==='Nº albarán'?'var(--ok)':m==='Proveedor + fecha'?'var(--info)':'var(--gold)';
+    return `<span style="background:rgba(0,0,0,.06);color:${col};padding:2px 7px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:.55rem;">${m}</span>`;
+  };
+  document.getElementById('tb-conciliados').innerHTML = conciliados.length
+    ? conciliados.map(({alb,fac,metodo}) => `<tr>
+        <td>${alb.emisor_nombre||'—'}</td>
+        <td class="mono">${alb.numero_factura||'—'}</td>
+        <td class="mono">${alb.fecha||'—'}</td>
+        <td class="mono">${fac.numero_factura||'—'}</td>
+        <td class="mono">${fac.fecha||'—'}</td>
+        <td class="r">${fmt(fac.total_factura)}</td>
+        <td>${metodoBadge(metodo)}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;padding:20px;font-family:\'JetBrains Mono\',monospace;font-size:.65rem;color:var(--muted);">Sin datos — añade albaranes y facturas con el Agente OCR</td></tr>';
+}
+
+function exportConciliacionCSV(){
+  const { sinFactura, sinAlbaran, conciliados } = conciliacionData;
+  const rows = [
+    ['ESTADO','FECHA','NUMERO','PROVEEDOR','TOTAL','METODO_CONCILIACION'],
+    ...sinFactura.map(a => ['SIN_FACTURA', a.fecha||'', a.numero_factura||'', a.emisor_nombre||'', '', '']),
+    ...sinAlbaran.map(f => ['SIN_ALBARAN', f.fecha||'', f.numero_factura||'', f.emisor_nombre||'', f.total_factura||'', '']),
+    ...conciliados.map(({alb,fac,metodo}) => ['CONCILIADO', fac.fecha||'', `${alb.numero_factura}→${fac.numero_factura}`, fac.emisor_nombre||'', fac.total_factura||'', metodo])
+  ];
+  const csv = rows.map(r => r.join(';')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `conciliacion-${document.getElementById('conc-anio').value}.csv`; a.click();
+  showToast('CSV de conciliación descargado');
+}
+
+// ══════════════════════════════════════════
+// EXPORTAR CSV INFORMES
+// ══════════════════════════════════════════
 function exportCSV(){
   if(!informesData.length){showToast('Genera un informe primero');return;}
   const cols=['fecha','tipo','numero_factura','emisor_nombre','emisor_cif','categoria','base_imponible_total','total_iva','recargo_equivalencia_total','total_factura'];
