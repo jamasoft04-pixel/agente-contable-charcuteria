@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agente Contable · Charcutería Ibérica</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=JetBrains+Mono:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --cream:#F6F1E7;--parch:#EDE5CF;--dark:#18110A;--ink:#2A1D0D;
+  --red:#8B1A1A;--red2:#B52B2B;--gold:#B8860B;--gold2:#D4A520;
+  --sepia:#6B4C2A;--sepia2:#9B7355;--border:#C8A96E;--borderT:rgba(200,169,110,0.3);
+  --muted:#8A7560;--ok:#2A5C10;--okbg:#EAF5E0;--warn:#7A4A00;--warnbg:#FFF3CD;
+  --info:#1A4A7A;--infobg:#E6F0FA;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);color:var(--ink);font-family:'Crimson Pro',Georgia,serif;min-height:100vh;
+  background-image:radial-gradient(ellipse at 10% 5%,rgba(184,134,11,.09) 0%,transparent 55%),
+  radial-gradient(ellipse at 90% 95%,rgba(139,26,26,.07) 0%,transparent 55%);}
+
+/* HEADER */
+header{background:var(--dark);border-bottom:3px solid var(--gold);box-shadow:0 4px 28px rgba(26,18,9,.45);position:sticky;top:0;z-index:200;}
+.hdr{max-width:1280px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:14px;}
+.hdr-logo{font-size:24px;}
+.hdr-title h1{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--cream);font-weight:700;line-height:1.2;}
+.hdr-title span{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--gold2);letter-spacing:.18em;text-transform:uppercase;}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.hdr-badge{display:flex;align-items:center;gap:6px;background:rgba(184,134,11,.15);border:1px solid var(--gold);border-radius:20px;padding:5px 12px;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--gold2);letter-spacing:.1em;}
+.pulse{width:6px;height:6px;background:var(--gold2);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr-stat{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:rgba(245,240,232,.5);display:flex;align-items:center;gap:5px;}
+.hdr-stat b{color:var(--gold2);}
+.ep{background:rgba(255,255,255,.5);border:1px solid var(--border);border-radius:4px;width:36px;height:36px;font-size:1.2rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.ep:hover{background:rgba(184,134,11,.15);border-color:var(--gold);}
+.ep.sel{background:rgba(139,26,26,.15);border-color:var(--red);}
+
+/* NAV PRINCIPAL */
+.nav-main{background:rgba(26,18,9,.96);border-bottom:1px solid rgba(200,169,110,.2);}
+.nav-inner{max-width:1280px;margin:0 auto;padding:0 28px;display:flex;gap:0;}
+.nav-btn{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;
+  padding:12px 20px;cursor:pointer;border:none;background:none;color:rgba(245,240,232,.5);
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;display:flex;align-items:center;gap:7px;}
+.nav-btn:hover{color:rgba(245,240,232,.8);}
+.nav-btn.active{color:var(--gold2);border-bottom-color:var(--gold);}
+
+/* LAYOUT */
+.wrap{max-width:1280px;margin:0 auto;padding:28px;}
+
+/* PÁGINA */
+.page{display:none;}.page.active{display:block;}
+
+/* ── PÁGINA: AGENTE ── */
+.agente-layout{display:grid;grid-template-columns:400px 1fr;gap:24px;align-items:start;}
+
+/* Panel genérico */
+.panel{background:var(--parch);border:1px solid var(--borderT);border-radius:4px;overflow:hidden;box-shadow:0 2px 12px rgba(26,18,9,.08);}
+.panel-hdr{background:var(--sepia);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;}
+.panel-hdr h3{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:var(--parch);font-weight:400;display:flex;align-items:center;gap:8px;}
+.panel-body{padding:20px;}
+
+/* Upload */
+.upload-zone{border:2px dashed var(--border);border-radius:4px;padding:30px 20px;text-align:center;cursor:pointer;transition:all .25s;background:rgba(255,255,255,.4);position:relative;}
+.upload-zone:hover,.upload-zone.over{border-color:var(--gold);background:rgba(184,134,11,.06);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-zone p{font-size:.95rem;color:var(--sepia);line-height:1.5;}
+.upload-zone strong{color:var(--red);}
+.upload-zone small{display:block;margin-top:5px;font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.08em;}
+#preview-wrap{margin-top:14px;display:none;}
+#preview-wrap img{width:100%;border-radius:3px;border:1px solid var(--border);max-height:300px;object-fit:contain;background:#fff;}
+
+/* Config */
+.cfg-row{margin-top:14px;display:flex;flex-direction:column;gap:3px;}
+.cfg-row label{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.1em;color:var(--sepia2);text-transform:uppercase;}
+.cfg-row input,.cfg-row select{background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:3px;padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--ink);outline:none;transition:border-color .2s;}
+.cfg-row input:focus,.cfg-row select:focus{border-color:var(--gold);}
+.cfg-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+
+/* Receptor box */
+.rec-box{background:rgba(139,26,26,.05);border:1px solid rgba(139,26,26,.2);border-radius:3px;padding:12px 14px;margin-top:14px;}
+.rec-box-title{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--red);margin-bottom:8px;}
+.rec-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.rec-fields input{background:rgba(255,255,255,.6);border:1px solid rgba(139,26,26,.2);border-radius:3px;padding:7px 10px;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--ink);outline:none;width:100%;}
+.rec-fields input:focus{border-color:var(--red);}
+
+/* Botón analizar */
+.btn-analizar{margin-top:16px;width:100%;padding:13px;background:var(--red);color:var(--cream);border:none;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;}
+.btn-analizar:hover:not(:disabled){background:var(--red2);transform:translateY(-1px);box-shadow:0 4px 14px rgba(139,26,26,.35);}
+.btn-analizar:disabled{opacity:.5;cursor:not-allowed;}
+.spin{animation:spin .8s linear infinite;display:none;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Error / alert boxes */
+.alert{padding:10px 14px;border-radius:3px;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:.68rem;line-height:1.5;display:none;}
+.alert.err{background:#FFF0F0;border:1px solid rgba(139,26,26,.3);color:var(--red);}
+.alert.ok{background:var(--okbg);border:1px solid rgba(42,92,16,.25);color:var(--ok);}
+.alert.info{background:var(--infobg);border:1px solid rgba(26,74,122,.2);color:var(--info);}
+.alert.warn{background:var(--warnbg);border:1px solid rgba(122,74,0,.25);color:var(--warn);}
+
+/* Resultado agente */
+.res-section{margin-bottom:18px;}
+.res-title{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--sepia2);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--borderT);}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.ic{background:rgba(255,255,255,.5);border:1px solid rgba(200,169,110,.35);border-radius:3px;padding:9px 11px;}
+.ic.full{grid-column:1/-1;}
+.ic .lbl{font-family:'JetBrains Mono',monospace;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:2px;}
+.ic .val{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--ink);font-weight:500;}
+.ic .val.rev{color:var(--warn);background:var(--warnbg);padding:2px 6px;border-radius:2px;font-size:.66rem;}
+.ic .val.tipo{color:var(--red);font-weight:700;}
+
+/* IVA table */
+.iva-tbl{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:.72rem;}
+.iva-tbl th{background:var(--sepia);color:var(--parch);padding:7px 10px;text-align:left;font-weight:400;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;}
+.iva-tbl td{padding:7px 10px;border-bottom:1px solid var(--borderT);color:var(--ink);}
+.iva-tbl td.r{text-align:right;}
+.iva-tbl td.z{color:var(--muted);}
+.iva-tbl tbody tr:nth-child(odd){background:rgba(255,255,255,.4);}
+
+/* Totales */
+.totals{background:var(--dark);border-radius:3px;padding:14px 16px;color:var(--cream);}
+.t-row{display:flex;justify-content:space-between;padding:4px 0;font-family:'JetBrains Mono',monospace;font-size:.72rem;border-bottom:1px solid rgba(200,169,110,.12);}
+.t-row:last-child{border-bottom:none;}
+.t-row .tl{color:rgba(245,240,232,.6);}
+.t-row .tv{color:var(--gold2);font-weight:500;}
+.t-row.grand{margin-top:7px;padding-top:10px;border-top:2px solid var(--gold);border-bottom:none;}
+.t-row.grand .tl{color:var(--cream);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;}
+.t-row.grand .tv{font-size:1.05rem;font-weight:700;color:var(--gold2);}
+
+/* Categoria badge */
+.cat-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(139,26,26,.1);border:1px solid rgba(139,26,26,.25);border-radius:20px;padding:4px 12px;font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--red);letter-spacing:.08em;text-transform:uppercase;}
+
+/* JSON block */
+.json-blk{background:var(--dark);border-radius:3px;padding:14px;position:relative;overflow:hidden;}
+.json-blk pre{font-family:'JetBrains Mono',monospace;font-size:.65rem;color:rgba(245,240,232,.75);line-height:1.55;overflow-x:auto;white-space:pre-wrap;max-height:220px;overflow-y:auto;}
+.json-blk pre .k{color:var(--gold2);}.json-blk pre .s{color:#98D982;}.json-blk pre .n{color:#82B4D9;}
+.copy-btn{position:absolute;top:8px;right:8px;background:rgba(200,169,110,.2);border:1px solid var(--gold);border-radius:3px;padding:3px 9px;font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--gold2);cursor:pointer;letter-spacing:.1em;text-transform:uppercase;transition:all .2s;}
+.copy-btn:hover{background:rgba(200,169,110,.35);}
+
+/* Historial sidebar */
+.hist-item{display:flex;align-items:center;gap:9px;padding:9px 12px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(200,169,110,.15);}
+.hist-item:hover{background:rgba(184,134,11,.07);}
+.hist-item .hi-info{flex:1;min-width:0;}
+.hist-item .hi-num{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hist-item .hi-meta{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted);margin-top:2px;}
+.hist-item .hi-total{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--red);font-weight:600;flex-shrink:0;}
+.hist-empty{padding:20px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);}
+
+/* ── PÁGINA: INFORMES ── */
+.period-bar{display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap;padding:14px 18px;background:var(--parch);border:1px solid var(--borderT);border-radius:4px;}
+.period-bar label{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sepia2);}
+.period-bar select{font-family:'JetBrains Mono',monospace;font-size:.72rem;padding:6px 10px;border:1px solid var(--border);border-radius:3px;background:rgba(255,255,255,.7);color:var(--ink);outline:none;}
+.btn-gen{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;padding:8px 16px;background:var(--red);color:var(--cream);border:none;border-radius:3px;cursor:pointer;transition:all .2s;margin-left:auto;}
+.btn-gen:hover{background:var(--red2);}
+
+/* Sub-tabs informes */
+.sub-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--borderT);}
+.sub-btn{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;padding:10px 16px;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap;}
+.sub-btn:hover{color:var(--sepia);}
+.sub-btn.active{color:var(--red);border-bottom-color:var(--red);}
+.sub-page{display:none;}.sub-page.active{display:block;}
+
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.kpi{background:var(--parch);border:1px solid var(--borderT);border-radius:4px;padding:16px 18px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--gold);}
+.kpi.r::before{background:var(--red);}.kpi.g::before{background:var(--ok);}.kpi.b::before{background:var(--info);}
+.kpi-lbl{font-family:'JetBrains Mono',monospace;font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+.kpi-val{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--ink);line-height:1;}
+.kpi-sub{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--sepia2);margin-top:3px;}
+.kpi-delta{font-family:'JetBrains Mono',monospace;font-size:.6rem;margin-top:5px;font-weight:500;}
+.kpi-delta.up{color:var(--red);}.kpi-delta.dn{color:var(--ok);}
+
+/* Two col */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px;}
+.chart-wrap{position:relative;height:240px;}
+
+/* Data table */
+.dtbl{width:100%;border-collapse:collapse;}
+.dtbl th{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--parch);background:var(--sepia);padding:8px 11px;text-align:left;font-weight:400;}
+.dtbl th.r{text-align:right;}
+.dtbl td{padding:8px 11px;border-bottom:1px solid var(--borderT);font-size:.88rem;color:var(--ink);}
+.dtbl td.mono{font-family:'JetBrains Mono',monospace;font-size:.72rem;}
+.dtbl td.r{text-align:right;font-family:'JetBrains Mono',monospace;font-size:.72rem;}
+.dtbl tbody tr:nth-child(odd){background:rgba(255,255,255,.4);}
+.dtbl tbody tr:hover{background:rgba(184,134,11,.05);}
+.dtbl tfoot td{background:var(--dark);color:var(--gold2);font-family:'JetBrains Mono',monospace;font-size:.75rem;font-weight:600;border:none;}
+.dtbl tfoot td.r{text-align:right;}
+
+/* Badge */
+.bdg{display:inline-block;padding:2px 8px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;}
+.bdg-emb{background:rgba(139,26,26,.12);color:var(--red);}
+.bdg-lac{background:rgba(27,90,160,.1);color:var(--info);}
+.bdg-beb{background:rgba(42,92,16,.12);color:var(--ok);}
+.bdg-lim{background:rgba(122,74,0,.1);color:var(--warn);}
+.bdg-pac{background:rgba(107,76,42,.15);color:var(--sepia);}
+.bdg-var{background:rgba(0,0,0,.08);color:var(--muted);}
+
+/* Prov bars */
+.prov-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--borderT);}
+.prov-row:last-child{border-bottom:none;}
+.prov-name{flex:0 0 150px;font-size:.85rem;}
+.prov-track{flex:1;height:7px;background:rgba(200,169,110,.2);border-radius:3px;overflow:hidden;}
+.prov-fill{height:100%;border-radius:3px;background:var(--red);transition:width .7s ease;}
+.prov-amt{flex:0 0 86px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:.7rem;}
+.prov-pct{flex:0 0 38px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);}
+
+/* Mod303 */
+.m303-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.m303-box{border:1px solid var(--borderT);border-radius:4px;overflow:hidden;}
+.m303-hdr{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;padding:9px 13px;color:var(--parch);}
+.m303-hdr.dev{background:var(--red);}.m303-hdr.ded{background:var(--ok);}
+.m303-row{display:flex;justify-content:space-between;padding:7px 13px;border-bottom:1px solid var(--borderT);font-family:'JetBrains Mono',monospace;font-size:.7rem;}
+.m303-row:last-child{border-bottom:none;}
+.m303-row .mk{color:var(--sepia2);font-size:.6rem;}
+.m303-row .mv{color:var(--ink);font-weight:500;}
+.m303-result{background:var(--dark);border-radius:4px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:14px;}
+.m303-result .rl{font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,240,232,.55);}
+.m303-result .rv{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--gold2);}
+
+/* Export bar */
+.exp-bar{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px;background:rgba(26,18,9,.04);border-top:1px solid var(--borderT);}
+.btn-exp{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;padding:6px 12px;border-radius:3px;cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.5);color:var(--sepia);transition:all .2s;display:flex;align-items:center;gap:5px;}
+.btn-exp:hover{background:rgba(184,134,11,.1);border-color:var(--gold);}
+.btn-exp.pdf{border-color:var(--red);color:var(--red);}
+
+/* Empty state */
+.empty{padding:50px 20px;text-align:center;}
+.empty-icon{font-size:3.5rem;opacity:.2;display:block;margin-bottom:14px;}
+.empty p{color:var(--muted);font-size:1rem;line-height:1.6;}
+
+/* Comp rows */
+.comp-hdr{display:grid;grid-template-columns:130px 1fr 1fr 70px;border-bottom:2px solid var(--borderT);}
+.comp-hdr div{font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:7px 10px;}
+.comp-row{display:grid;grid-template-columns:130px 1fr 1fr 70px;}
+.comp-row:nth-child(odd){background:rgba(255,255,255,.35);}
+.comp-row div{padding:8px 10px;border-bottom:1px solid var(--borderT);font-size:.85rem;}
+.comp-row .mono{font-family:'JetBrains Mono',monospace;font-size:.72rem;}
+.comp-delta{font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:600;}
+.comp-delta.up{color:var(--red);}.comp-delta.dn{color:var(--ok);}
+
+/* Sin datos informes */
+.no-data{padding:40px 20px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);}
+
+/* Toast */
+.toast{position:fixed;bottom:22px;right:22px;z-index:9999;background:var(--dark);color:var(--cream);font-family:'JetBrains Mono',monospace;font-size:.7rem;padding:11px 18px;border-radius:4px;border-left:3px solid var(--gold2);box-shadow:0 4px 20px rgba(0,0,0,.3);transform:translateY(70px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* Loading overlay */
+.loading-overlay{position:fixed;inset:0;background:rgba(26,18,9,.7);z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.loading-overlay.show{display:flex;}
+.loading-spinner{width:40px;height:40px;border:3px solid rgba(184,134,11,.3);border-top-color:var(--gold2);border-radius:50%;animation:spin .8s linear infinite;}
+.loading-text{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--gold2);letter-spacing:.1em;}
+
+@media(max-width:960px){
+  .agente-layout{grid-template-columns:1fr;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+  .two-col,.three-col,.m303-grid{grid-template-columns:1fr;}
+  .wrap{padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr">
+    <div class="hdr-logo" id="hdr-emoji" style="cursor:default">🥩</div>
+    <div class="hdr-title">
+      <h1 id="hdr-titulo">Agente Contable</h1>
+      <span id="hdr-negocio">Charcutería Ibérica · Sistema Tributario Español</span>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-stat">Facturas: <b id="hdr-count">—</b></div>
+      <div class="hdr-stat" style="margin-left:8px">Total: <b id="hdr-total">—</b></div>
+      <div class="hdr-badge"><div class="pulse"></div>Supabase · Live</div>
+      <button onclick="abrirConfig()" style="background:rgba(184,134,11,.15);border:1px solid var(--gold);border-radius:3px;padding:6px 12px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--gold2);letter-spacing:.1em;transition:all .2s;" onmouseover="this.style.background='rgba(184,134,11,.3)'" onmouseout="this.style.background='rgba(184,134,11,.15)'">⚙ Configurar</button>
+    </div>
+  </div>
+</header>
+
+<!-- MODAL CONFIGURACIÓN -->
+<div id="modal-cfg" style="display:none;position:fixed;inset:0;background:rgba(26,18,9,.75);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:var(--parch);border:1px solid var(--border);border-radius:6px;width:480px;max-width:92vw;box-shadow:0 8px 40px rgba(0,0,0,.4);overflow:hidden;">
+    <div style="background:var(--sepia);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:.65rem;letter-spacing:.18em;text-transform:uppercase;color:var(--parch);">⚙ Configuración del encabezado</span>
+      <button onclick="cerrarConfig()" style="background:none;border:none;color:rgba(237,229,207,.6);font-size:1.1rem;cursor:pointer;line-height:1;">✕</button>
+    </div>
+    <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sepia2);">Emoji / Icono</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="emoji-picks">
+          <button class="ep" onclick="selEmoji('🥩')">🥩</button>
+          <button class="ep" onclick="selEmoji('🐖')">🐖</button>
+          <button class="ep" onclick="selEmoji('🏪')">🏪</button>
+          <button class="ep" onclick="selEmoji('🧾')">🧾</button>
+          <button class="ep" onclick="selEmoji('🍖')">🍖</button>
+          <button class="ep" onclick="selEmoji('🧆')">🧆</button>
+          <button class="ep" onclick="selEmoji('🐄')">🐄</button>
+          <button class="ep" onclick="selEmoji('🛒')">🛒</button>
+          <button class="ep" onclick="selEmoji('📊')">📊</button>
+          <button class="ep" onclick="selEmoji('💼')">💼</button>
+        </div>
+        <input id="cfg-emoji-custom" type="text" maxlength="2" placeholder="O escribe tu propio emoji..."
+          style="background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:3px;padding:7px 10px;font-size:1rem;width:100%;outline:none;margin-top:4px;">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sepia2);">Título principal</label>
+        <input id="cfg-titulo" type="text" placeholder="Ej: Agente Contable" maxlength="40"
+          style="background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:3px;padding:8px 10px;font-family:'Playfair Display',serif;font-size:1rem;color:var(--ink);outline:none;">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sepia2);">Nombre del negocio</label>
+        <input id="cfg-negocio" type="text" placeholder="Ej: Charcutería García · Madrid" maxlength="60"
+          style="background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:3px;padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--ink);outline:none;">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sepia2);">Nombre fiscal (para facturas)</label>
+        <input id="cfg-fiscal" type="text" placeholder="Ej: García e Hijos SL" maxlength="60"
+          style="background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:3px;padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--ink);outline:none;">
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <label style="font-family:'JetBrains Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sepia2);">CIF / NIF del negocio</label>
+        <input id="cfg-cif" type="text" placeholder="Ej: B12345678" maxlength="20"
+          style="background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:3px;padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--ink);outline:none;">
+      </div>
+
+      <!-- Preview -->
+      <div style="background:var(--dark);border-radius:4px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
+        <span id="prev-emoji" style="font-size:20px;">🥩</span>
+        <div>
+          <div id="prev-titulo" style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--cream);font-weight:700;">Agente Contable</div>
+          <div id="prev-negocio" style="font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--gold2);letter-spacing:.15em;text-transform:uppercase;margin-top:2px;">Charcutería Ibérica · Sistema Tributario Español</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+        <button onclick="cerrarConfig()" style="font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:9px 18px;border:1px solid var(--border);border-radius:3px;background:rgba(255,255,255,.5);color:var(--sepia);cursor:pointer;">Cancelar</button>
+        <button onclick="guardarConfig()" style="font-family:'JetBrains Mono',monospace;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:9px 18px;background:var(--red);border:none;border-radius:3px;color:var(--cream);cursor:pointer;transition:all .2s;" onmouseover="this.style.background='#B52B2B'" onmouseout="this.style.background='var(--red)'">✓ Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="nav-main">
+  <div class="nav-inner">
+    <button class="nav-btn active" onclick="showPage('agente',this)">📎 Agente OCR</button>
+    <button class="nav-btn" onclick="showPage('informes',this)">📊 Informes</button>
+  </div>
+</nav>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Cargando...</div>
+</div>
+
+<div class="wrap">
+
+<!-- ══════════════════════════════════════ -->
+<!-- PÁGINA: AGENTE OCR                    -->
+<!-- ══════════════════════════════════════ -->
+<div class="page active" id="page-agente">
+  <div class="agente-layout">
+
+    <!-- Columna izquierda -->
+    <div>
+      <div class="panel" style="margin-bottom:18px">
+        <div class="panel-hdr"><h3>📎 Documento</h3></div>
+        <div class="panel-body">
+          <div class="upload-zone" id="dropzone">
+            <input type="file" id="file-input" accept="image/*">
+            <p>Arrastra tu <strong>factura o albarán</strong><br>o haz clic para seleccionar</p>
+            <small>JPG · PNG · WEBP</small>
+          </div>
+          <div id="preview-wrap"><img id="preview-img" src="" alt="preview"></div>
+
+          <div class="rec-box">
+            <div class="rec-box-title">📋 Receptor (Tu charcutería)</div>
+            <div class="rec-fields">
+              <input id="rec-nombre" type="text" placeholder="Nombre fiscal" value="Charcutería Ibérica SL">
+              <input id="rec-cif" type="text" placeholder="CIF" value="B12345678">
+            </div>
+          </div>
+
+          <button class="btn-analizar" id="btn-analizar" onclick="analizarFactura()">
+            <span id="btn-icon">🔍</span>
+            <span id="btn-txt">Analizar Documento</span>
+            <span class="spin" id="btn-spin">⟳</span>
+          </button>
+          <div class="alert err" id="alert-err"></div>
+          <div class="alert ok" id="alert-ok"></div>
+        </div>
+      </div>
+
+      <!-- Historial -->
+      <div class="panel">
+        <div class="panel-hdr">
+          <h3>🗂️ Historial</h3>
+          <span id="hist-count" style="font-family:'JetBrains Mono',monospace;font-size:.58rem;color:rgba(237,229,207,.5)">0 facturas</span>
+        </div>
+        <div id="hist-list"><div class="hist-empty">Sin facturas analizadas aún</div></div>
+      </div>
+    </div>
+
+    <!-- Columna derecha: resultado -->
+    <div>
+      <div class="panel" id="res-panel" style="display:none">
+        <div class="panel-hdr"><h3>✅ Datos Extraídos</h3><span id="res-guardado" style="font-family:'JetBrains Mono',monospace;font-size:.58rem;color:rgba(237,229,207,.5)"></span></div>
+        <div class="panel-body" id="res-body"></div>
+      </div>
+      <div class="panel" id="empty-panel">
+        <div class="panel-hdr"><h3>📊 Resultado</h3></div>
+        <div class="empty"><span class="empty-icon">🧾</span><p>Sube una factura o albarán<br>para extraer los datos contables</p></div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /page-agente -->
+
+<!-- ══════════════════════════════════════ -->
+<!-- PÁGINA: INFORMES                       -->
+<!-- ══════════════════════════════════════ -->
+<div class="page" id="page-informes">
+
+  <!-- Selector período -->
+  <div class="period-bar">
+    <label>Año</label>
+    <select id="sel-anio" onchange="onPeriodChange()">
+      <option value="2025">2025</option>
+      <option value="2024" selected>2024</option>
+      <option value="2023">2023</option>
+      <option value="2022">2022</option>
+    </select>
+    <label>Trimestre</label>
+    <select id="sel-trim" onchange="onPeriodChange()">
+      <option value="0">Año completo</option>
+      <option value="1">1T (Ene–Mar)</option>
+      <option value="2">2T (Abr–Jun)</option>
+      <option value="3">3T (Jul–Sep)</option>
+      <option value="4">4T (Oct–Dic)</option>
+    </select>
+    <button class="btn-gen" onclick="cargarInformes()">Generar informe</button>
+  </div>
+
+  <!-- Sub-tabs -->
+  <div class="sub-tabs">
+    <button class="sub-btn active" onclick="showSub('resumen',this)">📊 Resumen</button>
+    <button class="sub-btn" onclick="showSub('iva',this)">🧮 IVA / Mod.303</button>
+    <button class="sub-btn" onclick="showSub('categorias',this)">🏷️ Categorías</button>
+    <button class="sub-btn" onclick="showSub('proveedores',this)">🏢 Proveedores</button>
+    <button class="sub-btn" onclick="showSub('comparativa',this)">📈 Comparativa</button>
+    <button class="sub-btn" onclick="showSub('facturas',this)">🧾 Facturas</button>
+  </div>
+
+  <!-- SUB: RESUMEN -->
+  <div class="sub-page active" id="sub-resumen">
+    <div class="kpi-grid" id="kpi-resumen"></div>
+    <div class="two-col">
+      <div class="panel"><div class="panel-hdr"><h3>📅 Gasto mensual</h3></div><div class="panel-body"><div class="chart-wrap"><canvas id="ch-mensual"></canvas></div></div></div>
+      <div class="panel"><div class="panel-hdr"><h3>🏷️ Por categoría</h3></div><div class="panel-body"><div class="chart-wrap"><canvas id="ch-cat-donut"></canvas></div></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><h3>🧾 Últimas facturas</h3></div>
+      <div style="overflow-x:auto"><table class="dtbl"><thead><tr><th>Fecha</th><th>Nº</th><th>Proveedor</th><th>Categoría</th><th class="r">Base</th><th class="r">IVA</th><th class="r">Total</th></tr></thead><tbody id="tb-ultimas"></tbody></table></div>
+      <div class="exp-bar"><button class="btn-exp" onclick="exportCSV()">⬇ CSV</button><button class="btn-exp pdf" onclick="window.print()">⬇ PDF</button></div>
+    </div>
+  </div>
+
+  <!-- SUB: IVA -->
+  <div class="sub-page" id="sub-iva">
+    <div class="kpi-grid" id="kpi-iva"></div>
+    <div class="m303-grid" id="m303-grid"></div>
+    <div class="m303-result" id="m303-result" style="margin-top:14px"></div>
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-hdr"><h3>📊 IVA soportado por mes</h3></div>
+      <div class="panel-body"><div class="chart-wrap"><canvas id="ch-iva"></canvas></div></div>
+      <div class="exp-bar"><button class="btn-exp" onclick="exportCSV()">⬇ CSV Mod.303</button><button class="btn-exp pdf" onclick="window.print()">⬇ PDF Fiscal</button></div>
+    </div>
+  </div>
+
+  <!-- SUB: CATEGORÍAS -->
+  <div class="sub-page" id="sub-categorias">
+    <div class="two-col">
+      <div class="panel"><div class="panel-hdr"><h3>🏷️ Gasto por categoría</h3></div><div class="panel-body"><div class="chart-wrap"><canvas id="ch-cat-bar"></canvas></div></div></div>
+      <div class="panel"><div class="panel-hdr"><h3>📈 Tendencia mensual</h3></div><div class="panel-body"><div class="chart-wrap"><canvas id="ch-cat-line"></canvas></div></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><h3>📋 Detalle categorías</h3></div>
+      <div style="overflow-x:auto"><table class="dtbl"><thead><tr><th>Categoría</th><th class="r">Facturas</th><th class="r">Base</th><th class="r">IVA</th><th class="r">Total</th><th class="r">%</th></tr></thead><tbody id="tb-cat"></tbody><tfoot><tr><td>TOTAL</td><td class="r" id="tf-cat-n">—</td><td class="r" id="tf-cat-base">—</td><td class="r" id="tf-cat-iva">—</td><td class="r" id="tf-cat-total">—</td><td class="r">100%</td></tr></tfoot></table></div>
+      <div class="exp-bar"><button class="btn-exp" onclick="exportCSV()">⬇ CSV</button></div>
+    </div>
+  </div>
+
+  <!-- SUB: PROVEEDORES -->
+  <div class="sub-page" id="sub-proveedores">
+    <div class="two-col">
+      <div class="panel"><div class="panel-hdr"><h3>🏢 Ranking por gasto</h3></div><div class="panel-body" id="prov-bars"></div></div>
+      <div class="panel"><div class="panel-hdr"><h3>📊 Distribución</h3></div><div class="panel-body"><div class="chart-wrap"><canvas id="ch-prov"></canvas></div></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><h3>📋 Tabla proveedores</h3></div>
+      <div style="overflow-x:auto"><table class="dtbl"><thead><tr><th>Proveedor</th><th>CIF</th><th class="r">Facturas</th><th class="r">Base</th><th class="r">IVA</th><th class="r">Total</th></tr></thead><tbody id="tb-prov"></tbody></table></div>
+      <div class="exp-bar"><button class="btn-exp" onclick="exportCSV()">⬇ CSV</button></div>
+    </div>
+  </div>
+
+  <!-- SUB: COMPARATIVA -->
+  <div class="sub-page" id="sub-comparativa">
+    <div class="panel" style="margin-bottom:18px">
+      <div class="panel-hdr"><h3>📈 Variación vs período anterior</h3></div>
+      <div class="panel-body"><div class="chart-wrap"><canvas id="ch-comp"></canvas></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><h3>📋 Comparativa detallada</h3></div>
+      <div class="panel-body" style="padding:0">
+        <div class="comp-hdr"><div>Categoría</div><div>Período anterior</div><div>Período actual</div><div>Var.</div></div>
+        <div id="comp-rows"></div>
+      </div>
+      <div class="exp-bar"><button class="btn-exp" onclick="exportCSV()">⬇ CSV</button></div>
+    </div>
+  </div>
+
+  <!-- SUB: FACTURAS -->
+  <div class="sub-page" id="sub-facturas">
+    <div class="panel">
+      <div class="panel-hdr"><h3>🧾 Todas las facturas del período</h3></div>
+      <div style="overflow-x:auto"><table class="dtbl"><thead><tr><th>Fecha</th><th>Tipo</th><th>Nº Factura</th><th>Proveedor</th><th>CIF</th><th>Categoría</th><th class="r">Base</th><th class="r">IVA</th><th class="r">RE</th><th class="r">Total</th></tr></thead><tbody id="tb-todas"></tbody></table></div>
+      <div class="exp-bar"><button class="btn-exp" onclick="exportCSV()">⬇ Exportar CSV completo</button><button class="btn-exp pdf" onclick="window.print()">⬇ PDF</button></div>
+    </div>
+  </div>
+
+</div><!-- /page-informes -->
+
+</div><!-- /wrap -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG SUPABASE
+// ══════════════════════════════════════════
+const SB_URL = 'https://czrumyqeaqgdxbacppxr.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6cnVteXFlYXFnZHhiYWNwcHhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MzkwOTksImV4cCI6MjA4OTUxNTA5OX0.rcQqE-jrRMPm21tPxvqx1CnHgRDIK870VR1Knk1m_uU';
+
+const sbHeaders = {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+
+async function sbSelect(query){
+  const r = await fetch(`${SB_URL}/rest/v1/${query}`,{headers:{...sbHeaders,'Accept':'application/json'}});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbInsert(table,data){
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`,{method:'POST',headers:{...sbHeaders,'Prefer':'return=representation'},body:JSON.stringify(data)});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ══════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='informes') cargarInformes();
+}
+
+function showSub(id,btn){
+  document.querySelectorAll('.sub-page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sub-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// AGENTE OCR
+// ══════════════════════════════════════════
+let imgB64=null, imgMime=null, historial=[];
+
+const dropzone=document.getElementById('dropzone');
+document.getElementById('file-input').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);});
+dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.classList.add('over');});
+dropzone.addEventListener('dragleave',()=>dropzone.classList.remove('over'));
+dropzone.addEventListener('drop',e=>{e.preventDefault();dropzone.classList.remove('over');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
+
+function loadFile(f){
+  imgMime=f.type||'image/jpeg';
+  const reader=new FileReader();
+  reader.onload=e=>{
+    imgB64=e.target.result.split(',')[1];
+    const pw=document.getElementById('preview-wrap');
+    pw.style.display='block';
+    document.getElementById('preview-img').src=e.target.result;
+  };
+  reader.readAsDataURL(f);
+}
+
+async function analizarFactura(){
+  if(!imgB64){showAlert('err','Primero sube una imagen de factura o albarán.');return;}
+  const recNombre=document.getElementById('rec-nombre').value.trim()||'REVISAR MANUALMENTE';
+  const recCIF=document.getElementById('rec-cif').value.trim()||'REVISAR MANUALMENTE';
+  setLoading(true); clearAlerts();
+
+  const systemPrompt=`Eres un experto contable senior especializado en el sistema tributario español y experto en extracción de datos OCR.
+Analiza la imagen de la factura o albarán y extrae la información financiera con precisión.
+
+REGLAS:
+1. Extrae Nombre Fiscal y CIF/NIF del Emisor (Proveedor).
+2. Receptor: nombre="${recNombre}", cif="${recCIF}".
+3. Fechas formato DD/MM/AAAA.
+4. Separa bases imponibles: 4% (superreducido), 10% (reducido), 21% (general).
+5. Detecta Recargo de Equivalencia si aplica (0.5%, 1.4% o 5.2%).
+6. Si falta dato crítico: "REVISAR MANUALMENTE". Si albarán sin precios: tipo="Albarán".
+7. Categoría: Embutidos / Lácteos / Bebidas / Limpieza / Packaging / Carnicería / Varios / Otros.
+
+RESPONDE SOLO JSON sin markdown:
+{"documento":{"tipo":"Factura|Simplificada|Albarán","numero_factura":"","fecha":""},"emisor":{"nombre_fiscal":"","cif_nif":""},"receptor":{"nombre_fiscal":"${recNombre}","cif_nif":"${recCIF}"},"desglose_economico":{"base_4":0,"cuota_iva_4":0,"re_4":0,"base_10":0,"cuota_iva_10":0,"re_10":0,"base_21":0,"cuota_iva_21":0,"re_21":0,"base_imponible_total":0,"total_iva":0,"recargo_equivalencia_total":0,"total_factura":0},"categoria_gasto":"","observaciones":""}`;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:1000,
+        system:systemPrompt,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:imgMime,data:imgB64}},
+          {type:'text',text:'Analiza esta factura y devuelve el JSON.'}
+        ]}]
+      })
+    });
+    const data=await resp.json();
+    if(data.error) throw new Error(data.error.message);
+    const raw=data.content.map(b=>b.text||'').join('');
+    const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    // Guardar en Supabase
+    await guardarEnSupabase(parsed);
+    renderResultado(parsed);
+    addHistorial(parsed);
+    await actualizarHeader();
+    showAlert('ok','✓ Factura analizada y guardada en Supabase');
+  }catch(e){
+    showAlert('err','Error: '+e.message);
+  }finally{
+    setLoading(false);
+  }
+}
+
+async function guardarEnSupabase(d){
+  const doc=d.documento||{}, eco=d.desglose_economico||{}, emisor=d.emisor||{};
+  let fechaISO=null;
+  if(doc.fecha && doc.fecha!=='REVISAR MANUALMENTE'){
+    const p=doc.fecha.split('/');
+    if(p.length===3) fechaISO=`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+  }
+  const row={
+    tipo:doc.tipo||null, numero_factura:doc.numero_factura||null,
+    fecha:fechaISO,
+    emisor_nombre:emisor.nombre_fiscal||null, emisor_cif:emisor.cif_nif||null,
+    receptor_nombre:document.getElementById('rec-nombre').value.trim(),
+    receptor_cif:document.getElementById('rec-cif').value.trim(),
+    categoria:d.categoria_gasto||null,
+    base_imponible_total:eco.base_imponible_total||0,
+    base_4:eco.base_4||0, cuota_iva_4:eco.cuota_iva_4||0, re_4:eco.re_4||0,
+    base_10:eco.base_10||0, cuota_iva_10:eco.cuota_iva_10||0, re_10:eco.re_10||0,
+    base_21:eco.base_21||0, cuota_iva_21:eco.cuota_iva_21||0, re_21:eco.re_21||0,
+    total_iva:eco.total_iva||0,
+    recargo_equivalencia_total:eco.recargo_equivalencia_total||0,
+    total_factura:eco.total_factura||0,
+    observaciones:d.observaciones||null,
+    json_completo:d
+  };
+  await sbInsert('facturas',row);
+  document.getElementById('res-guardado').textContent='✓ Guardado';
+}
+
+function renderResultado(d){
+  const doc=d.documento||{}, emisor=d.emisor||{}, receptor=d.receptor||{}, eco=d.desglose_economico||{};
+  const rev=v=>v==='REVISAR MANUALMENTE'?`<span class="val rev">⚠ REVISAR</span>`:`<span class="val">${v||'—'}</span>`;
+  const ivaRows=[
+    {t:4,b:eco.base_4,i:eco.cuota_iva_4,r:eco.re_4},
+    {t:10,b:eco.base_10,i:eco.cuota_iva_10,r:eco.re_10},
+    {t:21,b:eco.base_21,i:eco.cuota_iva_21,r:eco.re_21}
+  ].filter(x=>x.b>0||x.i>0);
+
+  const ivaHTML=ivaRows.length?ivaRows.map(x=>`<tr><td><b>${x.t}%</b></td><td class="r">${fmt(x.b)}</td><td class="r">${fmt(x.i)}</td><td class="r ${x.r>0?'':'z'}">${x.r>0?fmt(x.r):'—'}</td></tr>`).join(''):`<tr><td colspan="4" class="z" style="text-align:center;padding:12px">Sin desglose IVA (Albarán)</td></tr>`;
+
+  document.getElementById('res-body').innerHTML=`
+    <div class="res-section">
+      <div class="res-title">Documento</div>
+      <div class="info-grid">
+        <div class="ic"><span class="lbl">Tipo</span><span class="val tipo">${doc.tipo||'—'}</span></div>
+        <div class="ic"><span class="lbl">Fecha</span><span class="val">${doc.fecha||'—'}</span></div>
+        <div class="ic full"><span class="lbl">Nº Factura</span>${rev(doc.numero_factura)}</div>
+      </div>
+    </div>
+    <div class="res-section">
+      <div class="res-title">Sujetos fiscales</div>
+      <div class="info-grid">
+        <div class="ic"><span class="lbl">Emisor</span>${rev(emisor.nombre_fiscal)}</div>
+        <div class="ic"><span class="lbl">CIF Emisor</span>${rev(emisor.cif_nif)}</div>
+        <div class="ic"><span class="lbl">Receptor</span><span class="val">${receptor.nombre_fiscal||'—'}</span></div>
+        <div class="ic"><span class="lbl">CIF Receptor</span><span class="val">${receptor.cif_nif||'—'}</span></div>
+      </div>
+    </div>
+    <div class="res-section">
+      <div class="res-title">Desglose IVA + Recargo Equivalencia</div>
+      <table class="iva-tbl"><thead><tr><th>Tipo</th><th>Base</th><th>Cuota IVA</th><th>R.Equiv.</th></tr></thead><tbody>${ivaHTML}</tbody></table>
+    </div>
+    <div class="res-section">
+      <div class="res-title">Totales</div>
+      <div class="totals">
+        <div class="t-row"><span class="tl">Base imponible total</span><span class="tv">${fmt(eco.base_imponible_total)}</span></div>
+        <div class="t-row"><span class="tl">Total IVA</span><span class="tv">${fmt(eco.total_iva)}</span></div>
+        ${eco.recargo_equivalencia_total>0?`<div class="t-row"><span class="tl">Recargo equivalencia</span><span class="tv">${fmt(eco.recargo_equivalencia_total)}</span></div>`:''}
+        <div class="t-row grand"><span class="tl">Total factura</span><span class="tv">${fmt(eco.total_factura)}</span></div>
+      </div>
+    </div>
+    <div class="res-section">
+      <div class="res-title">Clasificación</div>
+      <span class="cat-badge">📦 ${d.categoria_gasto||'Otros'}</span>
+      ${d.observaciones?`<div class="alert warn" style="display:block;margin-top:10px">⚠️ ${d.observaciones}</div>`:''}
+    </div>
+    <div class="res-section">
+      <div class="res-title">JSON exportable</div>
+      <div class="json-blk">
+        <button class="copy-btn" onclick="copyJSON()">Copiar</button>
+        <pre id="json-out">${colorJSON(JSON.stringify(d,null,2))}</pre>
+      </div>
+    </div>`;
+
+  document.getElementById('empty-panel').style.display='none';
+  document.getElementById('res-panel').style.display='block';
+  window._lastJSON=JSON.stringify(d,null,2);
+}
+
+function addHistorial(d){
+  const doc=d.documento||{}, emisor=d.emisor||{}, eco=d.desglose_economico||{};
+  historial.unshift({doc,emisor,eco,full:d});
+  const tipos={'Factura':'🧾','Simplificada':'📝','Albarán':'📦'};
+  const list=document.getElementById('hist-list');
+  list.innerHTML=historial.map((h,i)=>`
+    <div class="hist-item" onclick="reloadHist(${i})">
+      <span style="font-size:18px">${tipos[h.doc.tipo]||'📄'}</span>
+      <div class="hi-info">
+        <div class="hi-num">${h.doc.numero_factura&&h.doc.numero_factura!=='REVISAR MANUALMENTE'?h.doc.numero_factura:'(sin nº)'} · ${h.emisor.nombre_fiscal||'?'}</div>
+        <div class="hi-meta">${h.doc.fecha||'—'} · ${h.doc.tipo||'—'}</div>
+      </div>
+      <span class="hi-total">${fmt(h.eco.total_factura)}</span>
+    </div>`).join('');
+  document.getElementById('hist-count').textContent=`${historial.length} facturas`;
+}
+
+function reloadHist(i){renderResultado(historial[i].full);}
+
+function copyJSON(){
+  navigator.clipboard.writeText(window._lastJSON||'').then(()=>{
+    const b=document.querySelector('.copy-btn');b.textContent='✓ Copiado';setTimeout(()=>b.textContent='Copiar',2000);
+  });
+}
+
+// ══════════════════════════════════════════
+// INFORMES (datos desde Supabase)
+// ══════════════════════════════════════════
+let informesData=[];
+let charts={};
+
+function onPeriodChange(){}
+
+async function cargarInformes(){
+  const anio=document.getElementById('sel-anio').value;
+  const trim=parseInt(document.getElementById('sel-trim').value);
+  showLoading('Cargando facturas...');
+  try{
+    let q=`facturas?select=*&order=fecha.desc`;
+    if(trim===0){
+      q+=`&fecha=gte.${anio}-01-01&fecha=lte.${anio}-12-31`;
+    } else {
+      const mes1=(trim-1)*3+1, mes2=trim*3;
+      const d1=`${anio}-${String(mes1).padStart(2,'0')}-01`;
+      const lastDay=new Date(anio,mes2,0).getDate();
+      const d2=`${anio}-${String(mes2).padStart(2,'0')}-${lastDay}`;
+      q+=`&fecha=gte.${d1}&fecha=lte.${d2}`;
+    }
+    informesData=await sbSelect(q);
+    renderInformes(informesData, anio, trim);
+    showToast(`${informesData.length} facturas cargadas · ${anio}${trim>0?' T'+trim:''}`);
+  }catch(e){
+    showToast('Error cargando datos: '+e.message);
+  }finally{
+    hideLoading();
+  }
+}
+
+function renderInformes(data, anio, trim){
+  if(!data.length){
+    ['resumen','iva','categorias','proveedores','comparativa','facturas'].forEach(id=>{
+      const el=document.getElementById('sub-'+id);
+      if(el) el.innerHTML='<div class="no-data">Sin facturas para este período. Analiza documentos con el Agente OCR para ver datos aquí.</div>';
+    });
+    return;
+  }
+
+  const total=data.reduce((s,f)=>s+(f.total_factura||0),0);
+  const base=data.reduce((s,f)=>s+(f.base_imponible_total||0),0);
+  const iva=data.reduce((s,f)=>s+(f.total_iva||0),0);
+  const re=data.reduce((s,f)=>s+(f.recargo_equivalencia_total||0),0);
+
+  // ── KPI RESUMEN ──
+  document.getElementById('kpi-resumen').innerHTML=`
+    <div class="kpi r"><div class="kpi-lbl">Gasto total</div><div class="kpi-val">${fmtK(total)}</div><div class="kpi-sub">€ IVA incluido</div></div>
+    <div class="kpi"><div class="kpi-lbl">Base imponible</div><div class="kpi-val">${fmtK(base)}</div><div class="kpi-sub">€ sin impuestos</div></div>
+    <div class="kpi g"><div class="kpi-lbl">IVA soportado</div><div class="kpi-val">${fmtK(iva)}</div><div class="kpi-sub">€ deducible</div></div>
+    <div class="kpi b"><div class="kpi-lbl">Facturas</div><div class="kpi-val">${data.length}</div><div class="kpi-sub">documentos procesados</div></div>`;
+
+  // ── TABLA ÚLTIMAS ──
+  const BDGMAP={'Embutidos':'bdg-emb','Lácteos':'bdg-lac','Bebidas':'bdg-beb','Limpieza':'bdg-lim','Packaging':'bdg-pac'};
+  document.getElementById('tb-ultimas').innerHTML=data.slice(0,12).map(f=>`
+    <tr>
+      <td class="mono">${f.fecha?f.fecha.split('T')[0]:'-'}</td>
+      <td class="mono">${f.numero_factura||'-'}</td>
+      <td>${f.emisor_nombre||'-'}</td>
+      <td><span class="bdg ${BDGMAP[f.categoria]||'bdg-var'}">${f.categoria||'-'}</span></td>
+      <td class="r">${fmt(f.base_imponible_total)}</td>
+      <td class="r">${fmt(f.total_iva)}</td>
+      <td class="r">${fmt(f.total_factura)}</td>
+    </tr>`).join('');
+
+  // ── CHART MENSUAL ──
+  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const porMes=Array(12).fill(0);
+  data.forEach(f=>{if(f.fecha){const m=new Date(f.fecha).getMonth();porMes[m]+=(f.total_factura||0);}});
+  const mesesData=trim===0?porMes:porMes.slice((trim-1)*3,trim*3);
+  const mesesLabels=trim===0?meses:meses.slice((trim-1)*3,trim*3);
+  destroyChart('mensual');
+  charts['mensual']=new Chart(document.getElementById('ch-mensual'),{
+    type:'bar',
+    data:{labels:mesesLabels,datasets:[{label:'Gasto €',data:mesesData,backgroundColor:'rgba(139,26,26,.8)',borderRadius:3}]},
+    options:chartOpts(false)
+  });
+
+  // ── CATEGORÍAS ──
+  const catMap={};
+  data.forEach(f=>{
+    const c=f.categoria||'Otros';
+    if(!catMap[c]) catMap[c]={n:0,base:0,iva:0,total:0};
+    catMap[c].n++; catMap[c].base+=(f.base_imponible_total||0);
+    catMap[c].iva+=(f.total_iva||0); catMap[c].total+=(f.total_factura||0);
+  });
+  const cats=Object.entries(catMap).sort((a,b)=>b[1].total-a[1].total);
+  const CATCOLS=['rgba(139,26,26,.85)','rgba(26,74,122,.8)','rgba(42,92,16,.8)','rgba(122,74,0,.75)','rgba(107,76,42,.7)','rgba(138,117,96,.7)','rgba(180,134,11,.8)'];
+
+  destroyChart('catdonut');
+  charts['catdonut']=new Chart(document.getElementById('ch-cat-donut'),{
+    type:'doughnut',
+    data:{labels:cats.map(c=>c[0]),datasets:[{data:cats.map(c=>c[1].total),backgroundColor:CATCOLS,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{font:{family:"'JetBrains Mono',monospace",size:10},color:'#6B4C2A',boxWidth:10}}}}
+  });
+
+  destroyChart('catbar');
+  charts['catbar']=new Chart(document.getElementById('ch-cat-bar'),{
+    type:'bar',
+    data:{labels:cats.map(c=>c[0]),datasets:[{label:'€',data:cats.map(c=>c[1].total),backgroundColor:CATCOLS,borderRadius:3}]},
+    options:{...chartOpts(false),indexAxis:'y'}
+  });
+
+  // Tabla categorías
+  document.getElementById('tb-cat').innerHTML=cats.map(([c,v])=>`
+    <tr><td><span class="bdg ${BDGMAP[c]||'bdg-var'}">${c}</span></td>
+    <td class="r">${v.n}</td><td class="r">${fmt(v.base)}</td>
+    <td class="r">${fmt(v.iva)}</td><td class="r">${fmt(v.total)}</td>
+    <td class="r">${total>0?(v.total/total*100).toFixed(1)+'%':'—'}</td></tr>`).join('');
+  document.getElementById('tf-cat-n').textContent=data.length;
+  document.getElementById('tf-cat-base').textContent=fmt(base);
+  document.getElementById('tf-cat-iva').textContent=fmt(iva);
+  document.getElementById('tf-cat-total').textContent=fmt(total);
+
+  // ── PROVEEDORES ──
+  const provMap={};
+  data.forEach(f=>{
+    const p=f.emisor_nombre||'Desconocido', c=f.emisor_cif||'—';
+    if(!provMap[p]) provMap[p]={cif:c,n:0,base:0,iva:0,total:0};
+    provMap[p].n++; provMap[p].base+=(f.base_imponible_total||0);
+    provMap[p].iva+=(f.total_iva||0); provMap[p].total+=(f.total_factura||0);
+  });
+  const provs=Object.entries(provMap).sort((a,b)=>b[1].total-a[1].total);
+  const maxProv=provs[0]?provs[0][1].total:1;
+
+  document.getElementById('prov-bars').innerHTML=provs.map(([p,v])=>`
+    <div class="prov-row">
+      <div class="prov-name">${p}</div>
+      <div class="prov-track"><div class="prov-fill" style="width:${(v.total/maxProv*100).toFixed(1)}%"></div></div>
+      <div class="prov-amt">${fmt(v.total)}</div>
+      <div class="prov-pct">${total>0?(v.total/total*100).toFixed(1)+'%':'—'}</div>
+    </div>`).join('');
+
+  document.getElementById('tb-prov').innerHTML=provs.map(([p,v])=>`
+    <tr><td>${p}</td><td class="mono">${v.cif}</td><td class="r">${v.n}</td>
+    <td class="r">${fmt(v.base)}</td><td class="r">${fmt(v.iva)}</td><td class="r">${fmt(v.total)}</td></tr>`).join('');
+
+  destroyChart('prov');
+  charts['prov']=new Chart(document.getElementById('ch-prov'),{
+    type:'doughnut',
+    data:{labels:provs.map(p=>p[0]),datasets:[{data:provs.map(p=>p[1].total),backgroundColor:CATCOLS,borderWidth:0}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{font:{family:"'JetBrains Mono',monospace",size:9},color:'#6B4C2A',boxWidth:9,maxWidth:120}}}}
+  });
+
+  // ── IVA / MOD 303 ──
+  const base4=data.reduce((s,f)=>s+(f.base_4||0),0);
+  const iva4=data.reduce((s,f)=>s+(f.cuota_iva_4||0),0);
+  const base10=data.reduce((s,f)=>s+(f.base_10||0),0);
+  const iva10=data.reduce((s,f)=>s+(f.cuota_iva_10||0),0);
+  const base21=data.reduce((s,f)=>s+(f.base_21||0),0);
+  const iva21=data.reduce((s,f)=>s+(f.cuota_iva_21||0),0);
+
+  document.getElementById('kpi-iva').innerHTML=`
+    <div class="kpi"><div class="kpi-lbl">Base 10%</div><div class="kpi-val">${fmtK(base10)}</div><div class="kpi-sub">€ alimentos</div></div>
+    <div class="kpi"><div class="kpi-lbl">Base 21%</div><div class="kpi-val">${fmtK(base21)}</div><div class="kpi-sub">€ general</div></div>
+    <div class="kpi g"><div class="kpi-lbl">IVA deducible</div><div class="kpi-val">${fmtK(iva)}</div><div class="kpi-sub">€ total soportado</div></div>
+    <div class="kpi r"><div class="kpi-lbl">Recargo equiv.</div><div class="kpi-val">${fmtK(re)}</div><div class="kpi-sub">€ no deducible</div></div>`;
+
+  document.getElementById('m303-grid').innerHTML=`
+    <div class="m303-box">
+      <div class="m303-hdr ded">IVA soportado (compras)</div>
+      ${base4>0?`<div class="m303-row"><span class="mk">Base 4%</span><span class="mv">${fmt(base4)}</span></div><div class="m303-row"><span class="mk">Cuota 4%</span><span class="mv">${fmt(iva4)}</span></div>`:''}
+      <div class="m303-row"><span class="mk">Base 10%</span><span class="mv">${fmt(base10)}</span></div>
+      <div class="m303-row"><span class="mk">Cuota 10%</span><span class="mv">${fmt(iva10)}</span></div>
+      <div class="m303-row"><span class="mk">Base 21%</span><span class="mv">${fmt(base21)}</span></div>
+      <div class="m303-row"><span class="mk">Cuota 21%</span><span class="mv">${fmt(iva21)}</span></div>
+      <div class="m303-row" style="border-top:2px solid var(--borderT)"><span class="mk">Total deducible</span><span class="mv" style="font-weight:600">${fmt(iva)}</span></div>
+    </div>
+    <div class="m303-box">
+      <div class="m303-hdr dev">Recargo de Equivalencia</div>
+      <div class="m303-row"><span class="mk">RE tipo 10% (1,4%)</span><span class="mv">${fmt(data.reduce((s,f)=>s+(f.re_10||0),0))}</span></div>
+      <div class="m303-row"><span class="mk">RE tipo 21% (5,2%)</span><span class="mv">${fmt(data.reduce((s,f)=>s+(f.re_21||0),0))}</span></div>
+      <div class="m303-row"><span class="mk">RE tipo 4% (0,5%)</span><span class="mv">${fmt(data.reduce((s,f)=>s+(f.re_4||0),0))}</span></div>
+      <div class="m303-row" style="border-top:2px solid var(--borderT)"><span class="mk">Total RE</span><span class="mv" style="font-weight:600">${fmt(re)}</span></div>
+    </div>`;
+
+  document.getElementById('m303-result').innerHTML=`
+    <div><div class="m303-result" style="margin-top:0">
+      <div><div class="rl">IVA soportado total · ${anio}${trim>0?' T'+trim:''}</div><div style="font-family:'JetBrains Mono',monospace;font-size:.58rem;color:rgba(245,240,232,.4);margin-top:3px">Base total ${fmt(base)} · ${data.length} facturas</div></div>
+      <div class="rv">${fmt(iva)}</div>
+    </div></div>`;
+
+  // Chart IVA por mes
+  const ivaM=Array(12).fill(0), reM=Array(12).fill(0);
+  data.forEach(f=>{if(f.fecha){const m=new Date(f.fecha).getMonth();ivaM[m]+=(f.total_iva||0);reM[m]+=(f.recargo_equivalencia_total||0);}});
+  const ivaMD=trim===0?ivaM:ivaM.slice((trim-1)*3,trim*3);
+  const reMD=trim===0?reM:reM.slice((trim-1)*3,trim*3);
+  destroyChart('iva');
+  charts['iva']=new Chart(document.getElementById('ch-iva'),{
+    type:'bar',
+    data:{labels:mesesLabels,datasets:[
+      {label:'IVA soportado',data:ivaMD,backgroundColor:'rgba(139,26,26,.8)',borderRadius:3},
+      {label:'Recargo equiv.',data:reMD,backgroundColor:'rgba(184,134,11,.7)',borderRadius:3}
+    ]},
+    options:{...chartOpts(true)}
+  });
+
+  // ── TABLA TODAS ──
+  document.getElementById('tb-todas').innerHTML=data.map(f=>`
+    <tr>
+      <td class="mono">${f.fecha?f.fecha.split('T')[0]:'-'}</td>
+      <td class="mono">${f.tipo||'-'}</td>
+      <td class="mono">${f.numero_factura||'-'}</td>
+      <td>${f.emisor_nombre||'-'}</td>
+      <td class="mono">${f.emisor_cif||'-'}</td>
+      <td><span class="bdg ${BDGMAP[f.categoria]||'bdg-var'}">${f.categoria||'-'}</span></td>
+      <td class="r">${fmt(f.base_imponible_total)}</td>
+      <td class="r">${fmt(f.total_iva)}</td>
+      <td class="r">${fmt(f.recargo_equivalencia_total)}</td>
+      <td class="r">${fmt(f.total_factura)}</td>
+    </tr>`).join('');
+
+  // ── COMPARATIVA (período anterior) ──
+  renderComparativa(data, cats, anio, trim);
+
+  // ── CHART CAT LINE ──
+  const top3=cats.slice(0,3);
+  const catLineDS=top3.map((c,i)=>({
+    label:c[0],
+    data:mesesLabels.map((_,mi)=>{
+      const mReal=trim===0?mi:(trim-1)*3+mi;
+      return data.filter(f=>f.categoria===c[0]&&f.fecha&&new Date(f.fecha).getMonth()===mReal).reduce((s,f)=>s+(f.total_factura||0),0);
+    }),
+    borderColor:CATCOLS[i],tension:.3,pointRadius:3,fill:false
+  }));
+  destroyChart('catline');
+  charts['catline']=new Chart(document.getElementById('ch-cat-line'),{
+    type:'line', data:{labels:mesesLabels,datasets:catLineDS}, options:chartOpts(false)
+  });
+}
+
+async function renderComparativa(data, cats, anio, trim){
+  try{
+    let q2=`facturas?select=*`;
+    if(trim===0){
+      q2+=`&fecha=gte.${parseInt(anio)-1}-01-01&fecha=lte.${parseInt(anio)-1}-12-31`;
+    } else {
+      const pTrim=trim===1?4:trim-1;
+      const pAnio=trim===1?parseInt(anio)-1:parseInt(anio);
+      const m1=(pTrim-1)*3+1, m2=pTrim*3;
+      const d1=`${pAnio}-${String(m1).padStart(2,'0')}-01`;
+      const lastDay=new Date(pAnio,m2,0).getDate();
+      const d2=`${pAnio}-${String(m2).padStart(2,'0')}-${lastDay}`;
+      q2+=`&fecha=gte.${d1}&fecha=lte.${d2}`;
+    }
+    const prev=await sbSelect(q2);
+    const prevMap={};
+    prev.forEach(f=>{const c=f.categoria||'Otros';if(!prevMap[c])prevMap[c]=0;prevMap[c]+=(f.total_factura||0);});
+
+    document.getElementById('comp-rows').innerHTML=cats.map(([c,v])=>{
+      const p=prevMap[c]||0;
+      const delta=p>0?((v.total-p)/p*100):null;
+      const cls=delta>0?'up':'dn', arrow=delta>0?'▲':'▼';
+      return `<div class="comp-row">
+        <div>${c}</div>
+        <div class="mono">${p>0?fmt(p):'Sin datos'}</div>
+        <div class="mono">${fmt(v.total)}</div>
+        <div class="comp-delta ${cls}">${delta!==null?arrow+' '+Math.abs(delta).toFixed(1)+'%':'Nuevo'}</div>
+      </div>`;
+    }).join('');
+
+    const prevTotal=prev.reduce((s,f)=>s+(f.total_factura||0),0);
+    const currTotal=data.reduce((s,f)=>s+(f.total_factura||0),0);
+    const CATCOLS=['rgba(139,26,26,.8)','rgba(184,134,11,.7)'];
+    destroyChart('comp');
+    charts['comp']=new Chart(document.getElementById('ch-comp'),{
+      type:'bar',
+      data:{
+        labels:cats.map(c=>c[0]),
+        datasets:[
+          {label:'Período anterior',data:cats.map(c=>prevMap[c[0]]||0),backgroundColor:'rgba(184,134,11,.5)',borderRadius:3},
+          {label:'Período actual',data:cats.map(c=>c[1].total),backgroundColor:'rgba(139,26,26,.8)',borderRadius:3}
+        ]
+      },
+      options:chartOpts(false)
+    });
+  }catch(e){
+    document.getElementById('comp-rows').innerHTML='<div class="no-data">Sin datos del período anterior</div>';
+  }
+}
+
+// ══════════════════════════════════════════
+// HEADER STATS
+// ══════════════════════════════════════════
+async function actualizarHeader(){
+  try{
+    const data=await sbSelect('facturas?select=total_factura');
+    const total=data.reduce((s,f)=>s+(f.total_factura||0),0);
+    document.getElementById('hdr-count').textContent=data.length;
+    document.getElementById('hdr-total').textContent=fmt(total);
+  }catch(e){}
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function fmt(n){if(!n&&n!==0)return'—';return parseFloat(n).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+function fmtK(n){if(!n&&n!==0)return'0';const v=parseFloat(n);return v>=1000?(v/1000).toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1})+'k':v.toLocaleString('es-ES',{minimumFractionDigits:0,maximumFractionDigits:0});}
+
+function colorJSON(json){
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*")\s*:/g,'<span class="k">$1</span>:')
+    .replace(/:\s*("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*")/g,': <span class="s">$1</span>')
+    .replace(/:\s*(-?\d+\.?\d*)/g,': <span class="n">$1</span>');
+}
+
+function chartOpts(stacked){
+  const o={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:"'JetBrains Mono',monospace",size:10},color:'#6B4C2A'}}},scales:{x:{ticks:{font:{family:"'JetBrains Mono',monospace",size:9},color:'#8A7560'},grid:{color:'rgba(200,169,110,.12)'}},y:{ticks:{font:{family:"'JetBrains Mono',monospace",size:9},color:'#8A7560'},grid:{color:'rgba(200,169,110,.12)'}}}};
+  if(stacked){o.scales.x.stacked=true;o.scales.y.stacked=true;}
+  return o;
+}
+
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+function setLoading(on){
+  const btn=document.getElementById('btn-analizar');
+  document.getElementById('btn-icon').style.display=on?'none':'';
+  document.getElementById('btn-txt').textContent=on?'Analizando...':'Analizar Documento';
+  document.getElementById('btn-spin').style.display=on?'inline':'none';
+  btn.disabled=on;
+}
+
+function clearAlerts(){['alert-err','alert-ok'].forEach(id=>{const el=document.getElementById(id);el.style.display='none';el.textContent='';})}
+function showAlert(type,msg){const el=document.getElementById('alert-'+type);el.style.display='block';el.textContent=msg;}
+
+function showLoading(msg){document.getElementById('loading-text').textContent=msg;document.getElementById('loading-overlay').classList.add('show');}
+function hideLoading(){document.getElementById('loading-overlay').classList.remove('show');}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent='✓ '+msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+function exportCSV(){
+  if(!informesData.length){showToast('Genera un informe primero');return;}
+  const cols=['fecha','tipo','numero_factura','emisor_nombre','emisor_cif','categoria','base_imponible_total','total_iva','recargo_equivalencia_total','total_factura'];
+  const rows=[cols.join(';'),...informesData.map(f=>cols.map(c=>f[c]??'').join(';'))];
+  const blob=new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`facturas-${document.getElementById('sel-anio').value}-T${document.getElementById('sel-trim').value||'anual'}.csv`;a.click();
+  showToast('CSV descargado');
+}
+
+// ══════════════════════════════════════════
+// CONFIGURACIÓN ENCABEZADO
+// ══════════════════════════════════════════
+const CFG_KEY = 'agente_contable_config';
+
+function cargarConfigGuardada(){
+  try {
+    const raw = localStorage.getItem(CFG_KEY);
+    if(!raw) return;
+    const c = JSON.parse(raw);
+    if(c.emoji)   document.getElementById('hdr-emoji').textContent = c.emoji;
+    if(c.titulo)  document.getElementById('hdr-titulo').textContent = c.titulo;
+    if(c.negocio) document.getElementById('hdr-negocio').textContent = c.negocio;
+    if(c.titulo)  document.title = c.titulo + (c.negocio ? ' · ' + c.negocio : '');
+    // Actualizar también los campos receptor por defecto
+    if(c.fiscal)  document.getElementById('rec-nombre').value = c.fiscal;
+    if(c.cif)     document.getElementById('rec-cif').value = c.cif;
+  } catch(e){}
+}
+
+function abrirConfig(){
+  // Rellenar modal con valores actuales
+  const raw = localStorage.getItem(CFG_KEY);
+  const c = raw ? JSON.parse(raw) : {};
+  document.getElementById('cfg-emoji-custom').value = c.emoji || '';
+  document.getElementById('cfg-titulo').value  = c.titulo  || document.getElementById('hdr-titulo').textContent;
+  document.getElementById('cfg-negocio').value = c.negocio || document.getElementById('hdr-negocio').textContent;
+  document.getElementById('cfg-fiscal').value  = c.fiscal  || document.getElementById('rec-nombre').value;
+  document.getElementById('cfg-cif').value     = c.cif     || document.getElementById('rec-cif').value;
+  actualizarPreview();
+  // Marcar emoji seleccionado
+  document.querySelectorAll('.ep').forEach(b => b.classList.toggle('sel', b.textContent === (c.emoji||'🥩')));
+  document.getElementById('modal-cfg').style.display = 'flex';
+}
+
+function cerrarConfig(){
+  document.getElementById('modal-cfg').style.display = 'none';
+}
+
+function selEmoji(e){
+  document.getElementById('cfg-emoji-custom').value = e;
+  document.querySelectorAll('.ep').forEach(b => b.classList.toggle('sel', b.textContent === e));
+  actualizarPreview();
+}
+
+function actualizarPreview(){
+  const emoji   = document.getElementById('cfg-emoji-custom').value || '🥩';
+  const titulo  = document.getElementById('cfg-titulo').value  || 'Agente Contable';
+  const negocio = document.getElementById('cfg-negocio').value || '';
+  document.getElementById('prev-emoji').textContent   = emoji;
+  document.getElementById('prev-titulo').textContent  = titulo;
+  document.getElementById('prev-negocio').textContent = negocio;
+}
+
+// Preview en tiempo real al escribir
+['cfg-titulo','cfg-negocio','cfg-emoji-custom'].forEach(id => {
+  document.getElementById(id).addEventListener('input', actualizarPreview);
+});
+
+function guardarConfig(){
+  const emoji   = document.getElementById('cfg-emoji-custom').value.trim() || '🥩';
+  const titulo  = document.getElementById('cfg-titulo').value.trim()  || 'Agente Contable';
+  const negocio = document.getElementById('cfg-negocio').value.trim();
+  const fiscal  = document.getElementById('cfg-fiscal').value.trim();
+  const cif     = document.getElementById('cfg-cif').value.trim();
+
+  const cfg = { emoji, titulo, negocio, fiscal, cif };
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+
+  // Aplicar al header en vivo
+  document.getElementById('hdr-emoji').textContent   = emoji;
+  document.getElementById('hdr-titulo').textContent  = titulo;
+  document.getElementById('hdr-negocio').textContent = negocio || titulo;
+  document.title = titulo + (negocio ? ' · ' + negocio : '');
+
+  // Actualizar campos receptor
+  if(fiscal) document.getElementById('rec-nombre').value = fiscal;
+  if(cif)    document.getElementById('rec-cif').value    = cif;
+
+  cerrarConfig();
+  showToast('Configuración guardada');
+}
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('modal-cfg').addEventListener('click', function(e){
+  if(e.target === this) cerrarConfig();
+});
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+cargarConfigGuardada();
+actualizarHeader();
+</script>
+</body>
+</html>
