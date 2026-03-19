@@ -252,6 +252,28 @@ header{background:var(--dark);border-bottom:3px solid var(--gold);box-shadow:0 4
 .loading-spinner{width:40px;height:40px;border:3px solid rgba(184,134,11,.3);border-top-color:var(--gold2);border-radius:50%;animation:spin .8s linear infinite;}
 .loading-text{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--gold2);letter-spacing:.1em;}
 
+/* Cola en bloque */
+.queue-zone{border:2px dashed var(--border);border-radius:4px;padding:24px 20px;text-align:center;cursor:pointer;transition:all .25s;background:rgba(255,255,255,.4);position:relative;}
+.queue-zone:hover,.queue-zone.over{border-color:var(--gold);background:rgba(184,134,11,.06);}
+.queue-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.queue-list{margin-top:12px;display:flex;flex-direction:column;gap:5px;max-height:260px;overflow-y:auto;}
+.q-item{display:flex;align-items:center;gap:9px;padding:8px 10px;background:rgba(255,255,255,.5);border:1px solid var(--borderT);border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:.65rem;}
+.q-item .q-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);}
+.q-item .q-status{flex-shrink:0;font-size:.6rem;padding:2px 7px;border-radius:10px;}
+.q-status.pending{background:rgba(200,169,110,.2);color:var(--sepia);}
+.q-status.processing{background:rgba(184,134,11,.2);color:var(--warn);}
+.q-status.done{background:var(--okbg);color:var(--ok);}
+.q-status.error{background:#FFF0F0;color:var(--red);}
+.progress-bar{height:6px;background:rgba(200,169,110,.2);border-radius:3px;overflow:hidden;margin-top:10px;}
+.progress-fill{height:100%;background:var(--red);border-radius:3px;transition:width .4s ease;}
+.progress-txt{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);margin-top:5px;text-align:center;}
+.resumen-final{background:var(--dark);border-radius:4px;padding:14px 16px;margin-top:12px;display:none;}
+.resumen-final .rf-title{font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold2);margin-bottom:10px;}
+.rf-row{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:.68rem;padding:4px 0;border-bottom:1px solid rgba(200,169,110,.1);}
+.rf-row:last-child{border-bottom:none;}
+.rf-row .rl{color:rgba(245,240,232,.55);}.rf-row .rv{font-weight:500;}
+.rv.ok{color:#82C85A;}.rv.err{color:#F09595;}.rv.gold{color:var(--gold2);}
+
 @media(max-width:960px){
   .agente-layout{grid-template-columns:1fr;}
   .kpi-grid{grid-template-columns:1fr 1fr;}
@@ -369,22 +391,57 @@ header{background:var(--dark);border-bottom:3px solid var(--gold);box-shadow:0 4
     <!-- Columna izquierda -->
     <div>
       <div class="panel" style="margin-bottom:18px">
-        <div class="panel-hdr"><h3>📎 Documento</h3></div>
+        <div class="panel-hdr">
+          <h3>📎 Documentos</h3>
+          <span id="mode-badge" style="font-family:'JetBrains Mono',monospace;font-size:.55rem;color:rgba(237,229,207,.4);cursor:pointer;" onclick="toggleModo()">modo: individual</span>
+        </div>
         <div class="panel-body">
-          <div class="upload-zone" id="dropzone">
-            <input type="file" id="file-input" accept="image/*,.pdf,application/pdf">
-            <p>Arrastra tu <strong>factura o albarán</strong><br>o haz clic para seleccionar</p>
-            <small>JPG · PNG · WEBP · PDF</small>
-          </div>
-          <div id="preview-wrap">
-            <img id="preview-img" src="" alt="preview" style="display:none">
-            <div id="preview-pdf" style="display:none;background:rgba(139,26,26,.06);border:1px solid rgba(139,26,26,.2);border-radius:3px;padding:14px 16px;display:none;align-items:center;gap:12px;">
-              <span style="font-size:28px">📄</span>
-              <div>
-                <div style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--ink);font-weight:500;" id="pdf-filename">documento.pdf</div>
-                <div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);margin-top:2px;" id="pdf-pages">Cargando páginas...</div>
+
+          <!-- MODO INDIVIDUAL -->
+          <div id="modo-individual">
+            <div class="upload-zone" id="dropzone">
+              <input type="file" id="file-input" accept="image/*,.pdf,application/pdf">
+              <p>Arrastra tu <strong>factura o albarán</strong><br>o haz clic para seleccionar</p>
+              <small>JPG · PNG · WEBP · PDF</small>
+            </div>
+            <div id="preview-wrap">
+              <img id="preview-img" src="" alt="preview" style="display:none">
+              <div id="preview-pdf" style="display:none;background:rgba(139,26,26,.06);border:1px solid rgba(139,26,26,.2);border-radius:3px;padding:14px 16px;align-items:center;gap:12px;">
+                <span style="font-size:28px">📄</span>
+                <div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--ink);font-weight:500;" id="pdf-filename">documento.pdf</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);margin-top:2px;" id="pdf-pages">Cargando páginas...</div>
+                </div>
               </div>
             </div>
+          </div>
+
+          <!-- MODO BLOQUE -->
+          <div id="modo-bloque" style="display:none">
+            <div class="queue-zone" id="dropzone-bloque">
+              <input type="file" id="file-input-bloque" accept="image/*,.pdf,application/pdf" multiple>
+              <p>Arrastra <strong>varias facturas a la vez</strong><br>o haz clic para seleccionar</p>
+              <small>Hasta 30 archivos · JPG · PNG · WEBP · PDF</small>
+            </div>
+            <div class="queue-list" id="queue-list" style="display:none"></div>
+            <div class="progress-bar" id="progress-bar" style="display:none"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+            <div class="progress-txt" id="progress-txt" style="display:none"></div>
+            <div class="resumen-final" id="resumen-final">
+              <div class="rf-title">📋 Resumen del procesamiento</div>
+              <div class="rf-row"><span class="rl">Archivos procesados</span><span class="rv gold" id="rf-total">0</span></div>
+              <div class="rf-row"><span class="rl">Guardados correctamente</span><span class="rv ok" id="rf-ok">0</span></div>
+              <div class="rf-row"><span class="rl">Con errores</span><span class="rv err" id="rf-err">0</span></div>
+              <div class="rf-row"><span class="rl">Total importe</span><span class="rv gold" id="rf-importe">0,00 €</span></div>
+              <div id="rf-errlist" style="margin-top:8px;display:none">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:.58rem;color:#F09595;margin-bottom:4px;">Archivos con error:</div>
+                <div id="rf-errnames" style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:rgba(245,240,232,.5);line-height:1.7;"></div>
+              </div>
+            </div>
+            <button class="btn-analizar" id="btn-bloque" onclick="procesarBloque()" style="display:none">
+              <span id="btn-bloque-icon">⚡</span>
+              <span id="btn-bloque-txt">Procesar todos</span>
+              <span class="spin" id="btn-bloque-spin">⟳</span>
+            </button>
           </div>
 
           <div class="rec-box">
@@ -395,11 +452,14 @@ header{background:var(--dark);border-bottom:3px solid var(--gold);box-shadow:0 4
             </div>
           </div>
 
-          <button class="btn-analizar" id="btn-analizar" onclick="analizarFactura()">
-            <span id="btn-icon">🔍</span>
-            <span id="btn-txt">Analizar Documento</span>
-            <span class="spin" id="btn-spin">⟳</span>
-          </button>
+          <!-- Botón individual -->
+          <div id="btn-individual-wrap">
+            <button class="btn-analizar" id="btn-analizar" onclick="analizarFactura()">
+              <span id="btn-icon">🔍</span>
+              <span id="btn-txt">Analizar Documento</span>
+              <span class="spin" id="btn-spin">⟳</span>
+            </button>
+          </div>
           <div class="alert err" id="alert-err"></div>
           <div class="alert ok" id="alert-ok"></div>
         </div>
@@ -589,15 +649,194 @@ function showSub(id,btn){
 // AGENTE OCR
 // ══════════════════════════════════════════
 let imgB64=null, imgMime=null, historial=[];
+let modoBloque = false;
 
+// ── Modo toggle ──
+function toggleModo(){
+  modoBloque = !modoBloque;
+  document.getElementById('modo-individual').style.display = modoBloque ? 'none' : 'block';
+  document.getElementById('modo-bloque').style.display     = modoBloque ? 'block' : 'none';
+  document.getElementById('btn-individual-wrap').style.display = modoBloque ? 'none' : 'block';
+  document.getElementById('mode-badge').textContent = 'modo: ' + (modoBloque ? 'bloque' : 'individual');
+  // limpiar estado
+  imgB64=null; imgMime=null;
+  queueFiles=[];
+  document.getElementById('queue-list').style.display='none';
+  document.getElementById('progress-bar').style.display='none';
+  document.getElementById('progress-txt').style.display='none';
+  document.getElementById('resumen-final').style.display='none';
+  document.getElementById('btn-bloque').style.display='none';
+  clearAlerts();
+}
+
+// ── Modo individual ──
 const dropzone=document.getElementById('dropzone');
 document.getElementById('file-input').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);});
 dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.classList.add('over');});
 dropzone.addEventListener('dragleave',()=>dropzone.classList.remove('over'));
 dropzone.addEventListener('drop',e=>{e.preventDefault();dropzone.classList.remove('over');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
 
-let isPDF = false;
-let pdfPages = []; // array de base64 por página
+// ── Modo bloque ──
+let queueFiles = [];
+
+const dropzoneBloque = document.getElementById('dropzone-bloque');
+document.getElementById('file-input-bloque').addEventListener('change', e => {
+  if(e.target.files.length) cargarCola(Array.from(e.target.files));
+});
+dropzoneBloque.addEventListener('dragover', e=>{e.preventDefault();dropzoneBloque.classList.add('over');});
+dropzoneBloque.addEventListener('dragleave', ()=>dropzoneBloque.classList.remove('over'));
+dropzoneBloque.addEventListener('drop', e=>{
+  e.preventDefault();dropzoneBloque.classList.remove('over');
+  if(e.dataTransfer.files.length) cargarCola(Array.from(e.dataTransfer.files));
+});
+
+function cargarCola(files){
+  queueFiles = files.slice(0,30).map(f=>({file:f, status:'pending', resultado:null, error:null}));
+  renderCola();
+  document.getElementById('resumen-final').style.display='none';
+  document.getElementById('progress-bar').style.display='none';
+  document.getElementById('progress-txt').style.display='none';
+  document.getElementById('btn-bloque').style.display='flex';
+}
+
+function renderCola(){
+  const list = document.getElementById('queue-list');
+  list.style.display = 'flex';
+  const icons = {'pending':'⏳','processing':'⟳','done':'✓','error':'✕'};
+  const labels = {'pending':'En cola','processing':'Procesando...','done':'Guardado','error':'Error'};
+  list.innerHTML = queueFiles.map((q,i)=>`
+    <div class="q-item" id="qitem-${i}">
+      <span style="font-size:14px">${q.file.name.endsWith('.pdf')?'📄':'🖼️'}</span>
+      <span class="q-name">${q.file.name}</span>
+      <span class="q-status ${q.status}" id="qstatus-${i}">${icons[q.status]} ${labels[q.status]}</span>
+    </div>`).join('');
+}
+
+function updateQItem(i, status, msg){
+  const icons = {'pending':'⏳','processing':'⟳','done':'✓','error':'✕'};
+  const el = document.getElementById('qstatus-'+i);
+  if(el){ el.className='q-status '+status; el.textContent=icons[status]+' '+(msg||status); }
+  queueFiles[i].status = status;
+}
+
+async function procesarBloque(){
+  if(!queueFiles.length) return;
+  const recNombre = document.getElementById('rec-nombre').value.trim()||'REVISAR MANUALMENTE';
+  const recCIF    = document.getElementById('rec-cif').value.trim()||'REVISAR MANUALMENTE';
+
+  document.getElementById('btn-bloque').disabled = true;
+  document.getElementById('btn-bloque-icon').style.display='none';
+  document.getElementById('btn-bloque-spin').style.display='inline';
+  document.getElementById('btn-bloque-txt').textContent='Procesando...';
+  document.getElementById('progress-bar').style.display='block';
+  document.getElementById('progress-txt').style.display='block';
+  document.getElementById('resumen-final').style.display='none';
+
+  let okCount=0, errCount=0, totalImporte=0;
+  const errNames=[];
+
+  for(let i=0;i<queueFiles.length;i++){
+    const q = queueFiles[i];
+    updateQItem(i,'processing','Analizando...');
+
+    // Progreso
+    const pct = Math.round((i/queueFiles.length)*100);
+    document.getElementById('progress-fill').style.width=pct+'%';
+    document.getElementById('progress-txt').textContent=`${i+1} de ${queueFiles.length} · ${q.file.name}`;
+
+    try{
+      // Leer archivo
+      const {b64, mime} = await leerArchivo(q.file);
+      const esPDF = mime==='application/pdf';
+      const contentBlock = esPDF
+        ? {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}}
+        : {type:'image',source:{type:'base64',media_type:mime,data:b64}};
+
+      const systemPrompt=buildSystemPrompt(recNombre,recCIF);
+      const resp = await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',max_tokens:1000,
+          system:systemPrompt,
+          messages:[{role:'user',content:[contentBlock,{type:'text',text:'Analiza y devuelve el JSON.'}]}]
+        })
+      });
+      const data = await resp.json();
+      if(data.error) throw new Error(data.error.message);
+      const raw = data.content.map(b=>b.text||'').join('');
+      const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+      await guardarEnSupabase(parsed, recNombre, recCIF);
+      addHistorial(parsed);
+      totalImporte += parsed.desglose_economico?.total_factura||0;
+      okCount++;
+      updateQItem(i,'done','Guardado ✓');
+    } catch(e){
+      errCount++;
+      errNames.push(q.file.name);
+      updateQItem(i,'error','Error');
+      console.warn('Error en',q.file.name,e.message);
+    }
+
+    // Pausa entre llamadas para no saturar la API
+    if(i < queueFiles.length-1) await sleep(800);
+  }
+
+  // Progreso 100%
+  document.getElementById('progress-fill').style.width='100%';
+  document.getElementById('progress-txt').textContent=`Completado · ${queueFiles.length} archivos`;
+
+  // Resumen final
+  document.getElementById('rf-total').textContent   = queueFiles.length;
+  document.getElementById('rf-ok').textContent      = okCount;
+  document.getElementById('rf-err').textContent     = errCount;
+  document.getElementById('rf-importe').textContent = fmt(totalImporte);
+  if(errCount>0){
+    document.getElementById('rf-errlist').style.display='block';
+    document.getElementById('rf-errnames').textContent = errNames.join('\n');
+  } else {
+    document.getElementById('rf-errlist').style.display='none';
+  }
+  document.getElementById('resumen-final').style.display='block';
+
+  // Resetear botón
+  document.getElementById('btn-bloque').disabled=false;
+  document.getElementById('btn-bloque-icon').style.display='';
+  document.getElementById('btn-bloque-spin').style.display='none';
+  document.getElementById('btn-bloque-txt').textContent='Procesar todos';
+
+  await actualizarHeader();
+  showToast(`✓ ${okCount} facturas guardadas · ${errCount} errores`);
+}
+
+function leerArchivo(f){
+  return new Promise((res,rej)=>{
+    const mime = f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf')
+      ? 'application/pdf' : (f.type||'image/jpeg');
+    const reader=new FileReader();
+    reader.onload=e=>res({b64:e.target.result.split(',')[1],mime});
+    reader.onerror=rej;
+    reader.readAsDataURL(f);
+  });
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function buildSystemPrompt(recNombre,recCIF){
+  return `Eres un experto contable senior especializado en el sistema tributario español y experto en extracción de datos OCR.
+Analiza la imagen o documento de la factura o albarán y extrae la información financiera con precisión.
+REGLAS:
+1. Extrae Nombre Fiscal y CIF/NIF del Emisor (Proveedor).
+2. Receptor: nombre="${recNombre}", cif="${recCIF}".
+3. Fechas formato DD/MM/AAAA.
+4. Separa bases imponibles: 4% (superreducido), 10% (reducido), 21% (general).
+5. Detecta Recargo de Equivalencia si aplica (0.5%, 1.4% o 5.2%).
+6. Si falta dato crítico: "REVISAR MANUALMENTE". Si albarán sin precios: tipo="Albarán".
+7. Categoría: Embutidos / Lácteos / Bebidas / Limpieza / Packaging / Carnicería / Varios / Otros.
+RESPONDE SOLO JSON sin markdown:
+{"documento":{"tipo":"Factura|Simplificada|Albarán","numero_factura":"","fecha":""},"emisor":{"nombre_fiscal":"","cif_nif":""},"receptor":{"nombre_fiscal":"${recNombre}","cif_nif":"${recCIF}"},"desglose_economico":{"base_4":0,"cuota_iva_4":0,"re_4":0,"base_10":0,"cuota_iva_10":0,"re_10":0,"base_21":0,"cuota_iva_21":0,"re_21":0,"base_imponible_total":0,"total_iva":0,"recargo_equivalencia_total":0,"total_factura":0},"categoria_gasto":"","observaciones":""}`;
+}
 
 function loadFile(f){
   isPDF = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
@@ -690,8 +929,10 @@ RESPONDE SOLO JSON sin markdown:
   }
 }
 
-async function guardarEnSupabase(d){
+async function guardarEnSupabase(d, recNombreOverride, recCIFOverride){
   const doc=d.documento||{}, eco=d.desglose_economico||{}, emisor=d.emisor||{};
+  const recNombre = recNombreOverride || document.getElementById('rec-nombre').value.trim();
+  const recCIF    = recCIFOverride    || document.getElementById('rec-cif').value.trim();
   let fechaISO=null;
   if(doc.fecha && doc.fecha!=='REVISAR MANUALMENTE'){
     const p=doc.fecha.split('/');
@@ -701,8 +942,8 @@ async function guardarEnSupabase(d){
     tipo:doc.tipo||null, numero_factura:doc.numero_factura||null,
     fecha:fechaISO,
     emisor_nombre:emisor.nombre_fiscal||null, emisor_cif:emisor.cif_nif||null,
-    receptor_nombre:document.getElementById('rec-nombre').value.trim(),
-    receptor_cif:document.getElementById('rec-cif').value.trim(),
+    receptor_nombre:recNombre,
+    receptor_cif:recCIF,
     categoria:d.categoria_gasto||null,
     base_imponible_total:eco.base_imponible_total||0,
     base_4:eco.base_4||0, cuota_iva_4:eco.cuota_iva_4||0, re_4:eco.re_4||0,
