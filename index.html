@@ -372,11 +372,20 @@ header{background:var(--dark);border-bottom:3px solid var(--gold);box-shadow:0 4
         <div class="panel-hdr"><h3>📎 Documento</h3></div>
         <div class="panel-body">
           <div class="upload-zone" id="dropzone">
-            <input type="file" id="file-input" accept="image/*">
+            <input type="file" id="file-input" accept="image/*,.pdf,application/pdf">
             <p>Arrastra tu <strong>factura o albarán</strong><br>o haz clic para seleccionar</p>
-            <small>JPG · PNG · WEBP</small>
+            <small>JPG · PNG · WEBP · PDF</small>
           </div>
-          <div id="preview-wrap"><img id="preview-img" src="" alt="preview"></div>
+          <div id="preview-wrap">
+            <img id="preview-img" src="" alt="preview" style="display:none">
+            <div id="preview-pdf" style="display:none;background:rgba(139,26,26,.06);border:1px solid rgba(139,26,26,.2);border-radius:3px;padding:14px 16px;display:none;align-items:center;gap:12px;">
+              <span style="font-size:28px">📄</span>
+              <div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--ink);font-weight:500;" id="pdf-filename">documento.pdf</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--muted);margin-top:2px;" id="pdf-pages">Cargando páginas...</div>
+              </div>
+            </div>
+          </div>
 
           <div class="rec-box">
             <div class="rec-box-title">📋 Receptor (Tu charcutería)</div>
@@ -587,26 +596,51 @@ dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.classList.a
 dropzone.addEventListener('dragleave',()=>dropzone.classList.remove('over'));
 dropzone.addEventListener('drop',e=>{e.preventDefault();dropzone.classList.remove('over');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
 
+let isPDF = false;
+let pdfPages = []; // array de base64 por página
+
 function loadFile(f){
-  imgMime=f.type||'image/jpeg';
-  const reader=new FileReader();
-  reader.onload=e=>{
-    imgB64=e.target.result.split(',')[1];
-    const pw=document.getElementById('preview-wrap');
-    pw.style.display='block';
-    document.getElementById('preview-img').src=e.target.result;
-  };
-  reader.readAsDataURL(f);
+  isPDF = f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+  const pw = document.getElementById('preview-wrap');
+  pw.style.display = 'block';
+
+  if(isPDF){
+    // PDF: leer como base64 para enviarlo a Claude como documento
+    imgMime = 'application/pdf';
+    const reader = new FileReader();
+    reader.onload = e => {
+      imgB64 = e.target.result.split(',')[1];
+      document.getElementById('preview-img').style.display = 'none';
+      const pdfDiv = document.getElementById('preview-pdf');
+      pdfDiv.style.display = 'flex';
+      document.getElementById('pdf-filename').textContent = f.name;
+      document.getElementById('pdf-pages').textContent = `PDF listo · ${(f.size/1024).toFixed(0)} KB`;
+    };
+    reader.readAsDataURL(f);
+  } else {
+    // Imagen normal
+    isPDF = false;
+    imgMime = f.type || 'image/jpeg';
+    const reader = new FileReader();
+    reader.onload = e => {
+      imgB64 = e.target.result.split(',')[1];
+      document.getElementById('preview-pdf').style.display = 'none';
+      const img = document.getElementById('preview-img');
+      img.style.display = 'block';
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(f);
+  }
 }
 
 async function analizarFactura(){
-  if(!imgB64){showAlert('err','Primero sube una imagen de factura o albarán.');return;}
+  if(!imgB64){showAlert('err','Primero sube una imagen o PDF de factura o albarán.');return;}
   const recNombre=document.getElementById('rec-nombre').value.trim()||'REVISAR MANUALMENTE';
   const recCIF=document.getElementById('rec-cif').value.trim()||'REVISAR MANUALMENTE';
   setLoading(true); clearAlerts();
 
   const systemPrompt=`Eres un experto contable senior especializado en el sistema tributario español y experto en extracción de datos OCR.
-Analiza la imagen de la factura o albarán y extrae la información financiera con precisión.
+Analiza la imagen o documento de la factura o albarán y extrae la información financiera con precisión.
 
 REGLAS:
 1. Extrae Nombre Fiscal y CIF/NIF del Emisor (Proveedor).
@@ -616,20 +650,26 @@ REGLAS:
 5. Detecta Recargo de Equivalencia si aplica (0.5%, 1.4% o 5.2%).
 6. Si falta dato crítico: "REVISAR MANUALMENTE". Si albarán sin precios: tipo="Albarán".
 7. Categoría: Embutidos / Lácteos / Bebidas / Limpieza / Packaging / Carnicería / Varios / Otros.
+8. Si el PDF tiene varias páginas, analiza solo la primera que contenga datos fiscales.
 
 RESPONDE SOLO JSON sin markdown:
 {"documento":{"tipo":"Factura|Simplificada|Albarán","numero_factura":"","fecha":""},"emisor":{"nombre_fiscal":"","cif_nif":""},"receptor":{"nombre_fiscal":"${recNombre}","cif_nif":"${recCIF}"},"desglose_economico":{"base_4":0,"cuota_iva_4":0,"re_4":0,"base_10":0,"cuota_iva_10":0,"re_10":0,"base_21":0,"cuota_iva_21":0,"re_21":0,"base_imponible_total":0,"total_iva":0,"recargo_equivalencia_total":0,"total_factura":0},"categoria_gasto":"","observaciones":""}`;
+
+  // Construir el content según tipo de archivo
+  const contentBlock = isPDF
+    ? { type:'document', source:{ type:'base64', media_type:'application/pdf', data:imgB64 } }
+    : { type:'image',    source:{ type:'base64', media_type:imgMime, data:imgB64 } };
 
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',max_tokens:1000,
+        model:'claude-sonnet-4-20250514', max_tokens:1000,
         system:systemPrompt,
-        messages:[{role:'user',content:[
-          {type:'image',source:{type:'base64',media_type:imgMime,data:imgB64}},
-          {type:'text',text:'Analiza esta factura y devuelve el JSON.'}
+        messages:[{role:'user', content:[
+          contentBlock,
+          {type:'text', text:'Analiza esta factura/albarán y devuelve el JSON.'}
         ]}]
       })
     });
@@ -638,12 +678,11 @@ RESPONDE SOLO JSON sin markdown:
     const raw=data.content.map(b=>b.text||'').join('');
     const parsed=JSON.parse(raw.replace(/```json|```/g,'').trim());
 
-    // Guardar en Supabase
     await guardarEnSupabase(parsed);
     renderResultado(parsed);
     addHistorial(parsed);
     await actualizarHeader();
-    showAlert('ok','✓ Factura analizada y guardada en Supabase');
+    showAlert('ok','✓ '+(isPDF?'PDF':'Imagen')+' analizado y guardado en Supabase');
   }catch(e){
     showAlert('err','Error: '+e.message);
   }finally{
